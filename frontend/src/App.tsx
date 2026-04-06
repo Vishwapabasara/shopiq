@@ -1,0 +1,105 @@
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { authApi } from './lib/api'
+import { Sidebar } from './components/layout/Sidebar'
+import { AuditPage } from './pages/AuditPage'
+import { LoginPage } from './pages/LoginPage'
+import { ComingSoonPage } from './pages/ComingSoonPage'
+import { Spinner } from './components/ui'
+
+// ── Auth guard ────────────────────────────────────────────────────────────────
+
+function AuthGuard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['me'],
+    queryFn: authApi.me,
+    retry: false,
+    staleTime: 60_000,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size={32} />
+      </div>
+    )
+  }
+
+  if (!data?.authenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Outlet />
+}
+
+// ── Dashboard shell ───────────────────────────────────────────────────────────
+
+function DashboardShell() {
+  return (
+    <div className="flex min-h-screen bg-slate-50">
+      <Sidebar />
+      <main className="flex-1 flex flex-col min-w-0">
+        <Outlet />
+      </main>
+    </div>
+  )
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route element={<AuthGuard />}>
+          <Route element={<DashboardShell />}>
+            <Route path="/dashboard" element={<AuditPage />} />
+
+            <Route path="/dashboard/returns" element={
+              <ComingSoonPage module="ReturnRadar" icon="↩"
+                description="Return rate analytics, anomaly detection, and customer fraud scoring. Helps you identify which products, suppliers, or customers are costing you the most in returns." />
+            } />
+            <Route path="/dashboard/stock" element={
+              <ComingSoonPage module="StockSense" icon="⬡"
+                description="AI inventory replenishment — predicts stock-out dates per SKU from 90-day velocity trends and generates ready-to-send supplier purchase order emails." />
+            } />
+            <Route path="/dashboard/price" element={
+              <ComingSoonPage module="PricePulse" icon="◉"
+                description="Daily competitor price monitoring across your catalogue. Alerts when you're undercut and suggests optimal price points based on your margin rules." />
+            } />
+            <Route path="/dashboard/copy" element={
+              <ComingSoonPage module="BulkCopy AI" icon="✦"
+                description="Bulk AI product description generator. Upload a CSV of SKUs and get SEO-optimised, brand-voice-matched descriptions pushed straight to Shopify." />
+            } />
+            <Route path="/dashboard/reviews" element={
+              <ComingSoonPage module="ReviewReply Pro" icon="★"
+                description="AI-powered review response automation for Google Business, Trustpilot, and Amazon. Approve AI drafts in one click — your brand voice, zero effort." />
+            } />
+            <Route path="/dashboard/leads" element={
+              <ComingSoonPage module="LeadForge" icon="◎"
+                description="B2B lead enrichment and outreach sequencer. Import a CSV of companies and get enriched contact data with AI-personalised cold emails ready to send." />
+            } />
+            <Route path="/dashboard/invoice" element={
+              <ComingSoonPage module="InvoiceFlow" icon="▤"
+                description="Automated invoicing with AI-written payment follow-up sequences. Stripe payment links embedded in every invoice — get paid faster, chase less." />
+            } />
+            <Route path="/dashboard/contract" element={
+              <ComingSoonPage module="ContractPilot" icon="◻"
+                description="AI contract risk analyser. Upload any PDF contract and get a plain-English breakdown of payment terms, IP clauses, red flags, and negotiation points." />
+            } />
+            <Route path="/dashboard/onboard" element={
+              <ComingSoonPage module="OnboardKit" icon="▷"
+                description="Branded client onboarding portals. Build drag-and-drop intake flows with file uploads, automated reminders, and kickoff scheduling — no more chasing clients." />
+            } />
+
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
