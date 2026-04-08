@@ -9,10 +9,10 @@ export function LoginPage() {
 
   const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
-  // In dev mode, call the backend directly on port 8000.
-  // This sidesteps Vite proxy cookie issues — the session cookie is set
-  // directly on localhost:8000, the same origin all proxied /audit/* calls use.
-  const API = 'http://localhost:8000'
+  // API URLs - use full Railway URL in production
+  const API_BASE = isDev 
+    ? 'http://localhost:8000'
+    : 'https://shopiq-production.up.railway.app'
 
   const handleDevLaunch = async () => {
     setLoading(true)
@@ -23,13 +23,13 @@ export function LoginPage() {
       // Step 1: create session
       let loginRes: Response
       try {
-        loginRes = await fetch(`${API}/dev/login`, {
+        loginRes = await fetch(`${API_BASE}/dev/login`, {
           credentials: 'include',
         })
       } catch {
         throw new Error(
-          'Cannot connect to API on port 8000. ' +
-          'Make sure python dev_server.py is running.'
+          'Cannot connect to API. ' +
+          'Make sure the backend is running.'
         )
       }
 
@@ -42,7 +42,7 @@ export function LoginPage() {
       setStep('seeding')
 
       // Step 2: seed mock audit
-      const seedRes = await fetch(`${API}/dev/seed-audit`, {
+      const seedRes = await fetch(`${API_BASE}/dev/seed-audit`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -72,11 +72,17 @@ export function LoginPage() {
     const clean = shop.trim().toLowerCase()
       .replace(/^https?:\/\//, '').replace(/\/$/, '')
     const domain = clean.endsWith('.myshopify.com') ? clean : `${clean}.myshopify.com`
+    
     if (!/^[a-z0-9][a-z0-9\-]*\.myshopify\.com$/.test(domain)) {
       setShopError('Enter a valid Shopify store URL e.g. mystore.myshopify.com')
       return
     }
-    window.location.href = `/auth/shopify/install?shop=${domain}`
+    
+    // Redirect to backend OAuth install endpoint
+    // Use full URL in production to avoid CORS issues
+    const installUrl = `${API_BASE}/auth/shopify/install?shop=${domain}`
+    console.log('Redirecting to:', installUrl)
+    window.location.href = installUrl
   }
 
   const stepLabel: Record<string, string> = {
@@ -154,22 +160,22 @@ export function LoginPage() {
               </div>
             )}
 
-          <button
-  onClick={() => {
-    if (step === 'error') {
-      setStep('idle')
-      setErrorMsg('')
-    }
-    handleDevLaunch()
-  }}
-  disabled={loading || step === 'done'}
-  className="w-full bg-brand-600 text-white text-sm font-medium py-2.5 rounded-lg
-             hover:bg-brand-800 transition-colors disabled:opacity-60
-             flex items-center justify-center gap-2"
->
-  {loading && <Spinner />}
-  {stepLabel[step]}
-</button>
+            <button
+              onClick={() => {
+                if (step === 'error') {
+                  setStep('idle')
+                  setErrorMsg('')
+                }
+                handleDevLaunch()
+              }}
+              disabled={loading || step === 'done'}
+              className="w-full bg-brand-600 text-white text-sm font-medium py-2.5 rounded-lg
+                         hover:bg-brand-800 transition-colors disabled:opacity-60
+                         flex items-center justify-center gap-2"
+            >
+              {loading && <Spinner />}
+              {stepLabel[step]}
+            </button>
 
             <p className="text-[10px] text-brand-400 mt-2 text-center">
               Requires <code className="bg-brand-100 px-1 rounded">python dev_server.py</code> running on port 8000
@@ -204,8 +210,12 @@ export function LoginPage() {
             </div>
             {shopError && <p className="text-xs text-red-500 mt-1.5">{shopError}</p>}
           </div>
-          <button onClick={handleInstall} className="btn-primary w-full">
-            Install ShopIQ →
+          <button 
+            onClick={handleInstall} 
+            disabled={loading}
+            className="btn-primary w-full disabled:opacity-60"
+          >
+            {loading ? 'Connecting...' : 'Install ShopIQ →'}
           </button>
           <p className="text-xs text-slate-400 text-center">
             Free audit up to 10 products. No credit card required.
