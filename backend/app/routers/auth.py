@@ -285,7 +285,15 @@ async def login(request: Request, shop: str = Query(...)):
         "action": "redirect"  # Frontend should redirect to install_url
     }
 
- @router.post("/force-reinstall")
+@router.post("/logout")
+async def logout(request: Request):
+    shop = request.session.get("shop", "unknown")
+    logger.info(f"👋 Logout for shop: {shop}")
+    request.session.clear()
+    return {"ok": True}
+
+
+@router.post("/force-reinstall")  # ✅ SAME LEVEL AS OTHER @router DECORATORS
 async def force_reinstall(request: Request):
     """Delete tenant and force reinstall"""
     shop = request.session.get("shop")
