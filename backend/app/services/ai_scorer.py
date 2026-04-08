@@ -1,18 +1,18 @@
 """
 AI Scoring Service
 ──────────────────
-Sends product data to GPT-4o for qualitative scoring.
-Uses OpenAI's async client. Batches up to 50 products per call
+Sends product data to Gemini for qualitative scoring.
+Uses Google's new genai client. Batches up to 50 products per call
 using asyncio.gather to stay within rate limits.
 """
 import asyncio
 import json
 import logging
-import google.generativeai as genai
+from google import genai
+from google.genai import types
+
 from app.config import settings
 from app.services.audit_rules import strip_html, word_count
-from app.config import settings
-genai.configure(api_key=settings.GEMINI_API_KEY)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ def _build_prompt(product: dict) -> str:
 
 
 async def score_product_ai(
-    model: genai.GenerativeModel,
+    client: genai.Client,
     product: dict,
 ) -> dict:
     """Score a single product with Gemini. Returns parsed result dict."""
@@ -86,13 +86,15 @@ async def score_product_ai(
     full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
 
     try:
-        # Gemini API call
+        # New Gemini API call using client
         response = await asyncio.to_thread(
-            model.generate_content,
-            full_prompt,
-            generation_config=genai.types.GenerationConfig(
+            client.models.generate_content,
+            model='gemini-1.5-flash',
+            contents=full_prompt,
+            config=types.GenerateContentConfig(
                 temperature=0.3,
                 max_output_tokens=800,
+                response_mime_type="application/json",  # Force JSON response
             )
         )
 
@@ -108,7 +110,7 @@ async def score_product_ai(
 
     except json.JSONDecodeError as e:
         logger.warning(f"Gemini JSON parse error for {product.get('id')}: {e}")
-        logger.debug(f"Raw response: {raw[:200]}")
+        logger.debug(f"Raw response: {raw[:200] if 'raw' in locals() else 'N/A'}")
         return _fallback_ai_result()
     except Exception as e:
         logger.error(f"Gemini error for product {product.get('id')}: {e}")
@@ -141,13 +143,13 @@ async def score_products_batch(
         logger.warning("GEMINI_API_KEY not set — skipping AI scoring")
         return {}
 
-    # Initialize Gemini model
-    model = genai.GenerativeModel('gemini-1.5-flash')  # Or 'gemini-pro'
+    # Initialize Gemini client
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
     results: dict[str, dict] = {}
 
     for i in range(0, len(products), batch_size):
         batch = products[i:i + batch_size]
-        tasks = [score_product_ai(model, p) for p in batch]
+        tasks = [score_product_ai(client, p) for p in batch]
 
         batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
