@@ -8,9 +8,11 @@ using asyncio.gather to stay within rate limits.
 import asyncio
 import json
 import logging
-from openai import AsyncOpenAI
+import google.generativeai as genai
 from app.config import settings
 from app.services.audit_rules import strip_html, word_count
+from app.config import settings
+genai.configure(api_key=settings.GEMINI_API_KEY)
 
 logger = logging.getLogger(__name__)
 
@@ -74,32 +76,42 @@ def _build_prompt(product: dict) -> str:
 
 
 async def score_product_ai(
-    client: AsyncOpenAI,
+    model: genai.GenerativeModel,
     product: dict,
 ) -> dict:
-    """Score a single product with GPT-4o. Returns parsed result dict."""
+    """Score a single product with Gemini. Returns parsed result dict."""
     prompt = _build_prompt(product)
+    
+    # Combine system prompt and user prompt for Gemini
+    full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
 
     try:
-        response = await client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-            max_tokens=800,
-            temperature=0.3,   # Low temp = consistent, structured output
-            response_format={"type": "json_object"},
+        # Gemini API call
+        response = await asyncio.to_thread(
+            model.generate_content,
+            full_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.3,
+                max_output_tokens=800,
+            )
         )
 
-        raw = response.choices[0].message.content
+        raw = response.text
+        
+        # Clean potential markdown fences from response
+        if raw.startswith("```json"):
+            raw = raw.split("```json")[1].split("```")[0].strip()
+        elif raw.startswith("```"):
+            raw = raw.split("```")[1].split("```")[0].strip()
+            
         return json.loads(raw)
 
     except json.JSONDecodeError as e:
-        logger.warning(f"GPT-4o JSON parse error for {product.get('id')}: {e}")
+        logger.warning(f"Gemini JSON parse error for {product.get('id')}: {e}")
+        logger.debug(f"Raw response: {raw[:200]}")
         return _fallback_ai_result()
     except Exception as e:
-        logger.error(f"GPT-4o error for product {product.get('id')}: {e}")
+        logger.error(f"Gemini error for product {product.get('id')}: {e}")
         return _fallback_ai_result()
 
 
@@ -112,7 +124,7 @@ def _fallback_ai_result() -> dict:
             "Add customer-centric language focusing on value to the buyer",
         ],
         "rewritten_description": "",
-        "one_line_verdict": "Unable to generate AI analysis — deterministic score still applied",
+        "one_line_verdict": "Unable to generate AI analysis (Gemini error) — deterministic score still applied",
     }
 
 
@@ -121,20 +133,21 @@ async def score_products_batch(
     batch_size: int = 10,
 ) -> dict[str, dict]:
     """
-    Score a list of products with GPT-4o.
+    Score a list of products with Gemini.
     Processes in batches to respect rate limits.
     Returns dict keyed by shopify_product_id.
     """
-    if not settings.OPENAI_API_KEY:
-        logger.warning("OPENAI_API_KEY not set — skipping AI scoring")
+    if not settings.GEMINI_API_KEY:
+        logger.warning("GEMINI_API_KEY not set — skipping AI scoring")
         return {}
 
-    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+    # Initialize Gemini model
+    model = genai.GenerativeModel('gemini-1.5-flash')  # Or 'gemini-pro'
     results: dict[str, dict] = {}
 
     for i in range(0, len(products), batch_size):
         batch = products[i:i + batch_size]
-        tasks = [score_product_ai(client, p) for p in batch]
+        tasks = [score_product_ai(model, p) for p in batch]
 
         batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 

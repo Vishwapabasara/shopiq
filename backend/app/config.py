@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # OpenAI
-    OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = "AIzaSyDdiCcgA5reJd8bkZudLLnpOel7WuuC_m4"
 
     # Encryption
     TOKEN_ENCRYPTION_KEY: str = ""
