@@ -9,12 +9,17 @@ export function LoginPage() {
 
   const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
-  // API URLs - use full Railway URL in production
-  const API_BASE = isDev 
+  // CRITICAL: Always use full backend URL in production
+  const BACKEND_URL = isDev 
     ? 'http://localhost:8000'
     : 'https://shopiq-production.up.railway.app'
 
   const handleDevLaunch = async () => {
+    if (!isDev) {
+      alert('Dev mode is only available when running locally')
+      return
+    }
+
     setLoading(true)
     setStep('login')
     setErrorMsg('')
@@ -23,13 +28,13 @@ export function LoginPage() {
       // Step 1: create session
       let loginRes: Response
       try {
-        loginRes = await fetch(`${API_BASE}/dev/login`, {
+        loginRes = await fetch(`${BACKEND_URL}/dev/login`, {
           credentials: 'include',
         })
-      } catch {
+      } catch (err) {
         throw new Error(
-          'Cannot connect to API. ' +
-          'Make sure the backend is running.'
+          'Cannot connect to local backend on port 8000. ' +
+          'Make sure "python dev_server.py" is running.'
         )
       }
 
@@ -42,7 +47,7 @@ export function LoginPage() {
       setStep('seeding')
 
       // Step 2: seed mock audit
-      const seedRes = await fetch(`${API_BASE}/dev/seed-audit`, {
+      const seedRes = await fetch(`${BACKEND_URL}/dev/seed-audit`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -69,20 +74,31 @@ export function LoginPage() {
   }
 
   const handleInstall = () => {
+    setLoading(true)
+    setShopError('')
+
     const clean = shop.trim().toLowerCase()
-      .replace(/^https?:\/\//, '').replace(/\/$/, '')
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '')
+    
     const domain = clean.endsWith('.myshopify.com') ? clean : `${clean}.myshopify.com`
     
+    // Validate shop domain
     if (!/^[a-z0-9][a-z0-9\-]*\.myshopify\.com$/.test(domain)) {
       setShopError('Enter a valid Shopify store URL e.g. mystore.myshopify.com')
+      setLoading(false)
       return
     }
     
-    // Redirect to backend OAuth install endpoint
-    // Use full URL in production to avoid CORS issues
-    const installUrl = `${API_BASE}/auth/shopify/install?shop=${domain}`
-    console.log('Redirecting to:', installUrl)
-    window.location.href = installUrl
+    // CRITICAL: Redirect directly to backend (not relative URL)
+    const installUrl = `${BACKEND_URL}/auth/shopify/install?shop=${domain}`
+    
+    console.log('🔗 Redirecting to backend:', installUrl)
+    
+    // Add small delay so user sees the loading state
+    setTimeout(() => {
+      window.location.href = installUrl
+    }, 300)
   }
 
   const stepLabel: Record<string, string> = {
@@ -198,10 +214,12 @@ export function LoginPage() {
                 type="text"
                 value={shop}
                 onChange={e => { setShop(e.target.value); setShopError('') }}
-                onKeyDown={e => e.key === 'Enter' && handleInstall()}
+                onKeyDown={e => e.key === 'Enter' && !loading && handleInstall()}
                 placeholder="mystore"
+                disabled={loading}
                 className="flex-1 border border-r-0 border-slate-200 rounded-l-lg px-3 py-2.5
-                           text-sm focus:outline-none focus:border-brand-400 transition-colors"
+                           text-sm focus:outline-none focus:border-brand-400 transition-colors
+                           disabled:bg-slate-100 disabled:cursor-not-allowed"
               />
               <span className="border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm
                                text-slate-400 rounded-r-lg border-l-0 whitespace-nowrap">
@@ -212,14 +230,29 @@ export function LoginPage() {
           </div>
           <button 
             onClick={handleInstall} 
-            disabled={loading}
-            className="btn-primary w-full disabled:opacity-60"
+            disabled={loading || !shop.trim()}
+            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
           >
-            {loading ? 'Connecting...' : 'Install ShopIQ →'}
+            {loading ? (
+              <>
+                <Spinner />
+                Connecting...
+              </>
+            ) : (
+              'Install ShopIQ →'
+            )}
           </button>
           <p className="text-xs text-slate-400 text-center">
             Free audit up to 10 products. No credit card required.
           </p>
+          
+          {/* Debug info in dev */}
+          {isDev && (
+            <p className="text-[10px] text-slate-400 text-center font-mono">
+              Backend: {BACKEND_URL}
+            </p>
+          )}
         </div>
 
       </div>
