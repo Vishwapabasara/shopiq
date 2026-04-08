@@ -127,7 +127,6 @@ async def get_audit_history(
          "products_scanned": 1, "critical_count": 1, "created_at": 1, "completed_at": 1}
     ).sort("created_at", -1).limit(limit)
 
-    # Use _to_list helper — works with both motor and mongomock
     docs = await _to_list(cursor)
     for doc in docs:
         doc["_id"] = str(doc["_id"])
@@ -253,13 +252,16 @@ async def get_product_detail(
 
     return product
 
-    @router.post("/{audit_id}/reset")
+
+# ── POST /{audit_id}/reset ────────────────────────────────────────────────────
+
+@router.post("/{audit_id}/reset")
 async def reset_audit(audit_id: str, tenant: dict = Depends(get_current_tenant)):
     """Reset a stuck audit back to failed state"""
     logger.info(f"🔄 Resetting audit: {audit_id}")
-    
+
     db = await get_db()
-    
+
     result = await aw(db.audits.update_one(
         {
             "_id": ObjectId(audit_id),
@@ -272,10 +274,9 @@ async def reset_audit(audit_id: str, tenant: dict = Depends(get_current_tenant))
             }
         }
     ))
-    
+
     if result.matched_count == 0:
         raise HTTPException(404, "Audit not found")
-    
+
     logger.info(f"✅ Audit {audit_id} reset to failed state")
-    
     return {"success": True, "message": "Audit reset - you can now run a new audit"}
