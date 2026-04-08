@@ -9,34 +9,36 @@ from app.config import settings
 # 1. CREATE APP FIRST
 app = FastAPI(title="ShopIQ API", version="1.0.0")
 
-# 2. ADD MIDDLEWARE
+# 2. ADD SESSION MIDDLEWARE
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SESSION_SECRET,
     max_age=86400,
-    same_site="lax",
+    same_site="none",  # Required for cross-origin cookies
     https_only=True,
+    session_cookie="shopiq_session",
 )
 
+# 3. ADD CORS MIDDLEWARE
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # Local development
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:5175",
+        "http://localhost:3000",
         "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "http://127.0.0.1:5175",
+        # Production frontend
         "https://shopiq-iota.vercel.app",
-        settings.APP_URL,
-        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Set-Cookie"],
 )
 
-# 3. CONFIGURE LOGGING
+# 4. CONFIGURE LOGGING
 logging.basicConfig(
     level=settings.LOG_LEVEL,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -45,7 +47,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.info("🚀 ShopIQ starting up...")
 
-# 4. INCLUDE ROUTERS
+# 5. INCLUDE ROUTERS
 from app.routers import auth, audit
 app.include_router(auth.router)
 app.include_router(audit.router)
@@ -54,16 +56,17 @@ if settings.DEV_MODE:
     from app.dev.dev_router import router as dev_router
     app.include_router(dev_router)
 
-# 5. NOW ADD ROUTES (after app is created!)
+# 6. DEFINE ROUTES
+
 @app.get("/", response_class=HTMLResponse)
 async def root(shop: str = None, embedded: str = None, host: str = None):
     """
-    Root endpoint - Shopify embedded app entry point
+    Root endpoint - handles Shopify embedded app and landing page
     """
     logger.info(f"🏠 Root accessed - shop: {shop}, embedded: {embedded}")
     
+    # Shopify embedded app access
     if shop and embedded == "1":
-        # Embedded in Shopify admin
         from app.dependencies import get_db
         from app.routers.auth import aw
         
@@ -71,7 +74,7 @@ async def root(shop: str = None, embedded: str = None, host: str = None):
         tenant = await aw(db.tenants.find_one({"shop_domain": shop}))
         
         if tenant:
-            # Shop is installed - use App Bridge to navigate
+            # Shop is installed - redirect to frontend using App Bridge
             return HTMLResponse(content=f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -93,7 +96,6 @@ async def root(shop: str = None, embedded: str = None, host: str = None):
         const shop = '{shop}';
         const host = '{host or ""}';
         
-        // Use Shopify App Bridge to redirect
         const AppBridge = window['app-bridge'];
         const createApp = AppBridge.default;
         const Redirect = AppBridge.actions.Redirect;
@@ -104,8 +106,6 @@ async def root(shop: str = None, embedded: str = None, host: str = None):
         }});
         
         const redirect = Redirect.create(app);
-        
-        // Redirect to external frontend
         redirect.dispatch(Redirect.Action.REMOTE, {{
             url: 'https://shopiq-iota.vercel.app/dashboard?shop=' + shop,
             newContext: true
@@ -115,8 +115,8 @@ async def root(shop: str = None, embedded: str = None, host: str = None):
 </html>
             """)
         else:
-            # Not installed - start OAuth
-            logger.info(f"⚠️ Shop {shop} not installed")
+            # Shop not installed - start OAuth flow
+            logger.info(f"⚠️ Shop {shop} not installed, redirecting to OAuth")
             return HTMLResponse(content=f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -138,7 +138,7 @@ async def root(shop: str = None, embedded: str = None, host: str = None):
 </html>
             """)
     
-    # Not embedded - show landing page
+    # Landing page for direct web access
     return HTMLResponse(content="""
 <!DOCTYPE html>
 <html lang="en">
@@ -231,7 +231,6 @@ async def root(shop: str = None, embedded: str = None, host: str = None):
                 return;
             }
             
-            // Validate shop name
             if (!/^[a-zA-Z0-9][a-zA-Z0-9\-]*$/.test(shop)) {
                 errorDiv.textContent = 'Invalid shop name. Use only letters, numbers, and hyphens.';
                 return;
@@ -252,15 +251,17 @@ async def root(shop: str = None, embedded: str = None, host: str = None):
 
 @app.get("/health")
 async def health():
+    """Health check endpoint"""
     return {"status": "ok", "dev_mode": settings.DEV_MODE}
 
 
 @app.on_event("startup")
 async def startup():
+    """Startup event handler"""
     if not settings.DEV_MODE:
         from app.dependencies import create_indexes
         await create_indexes()
+        logger.info("✅ Production mode - indexes created")
     else:
-        print("🛠  DEV MODE active — /dev/* routes enabled")
-        print("   Frontend → http://localhost:5173 (or 5174)")
-        print("   Click '⚡ Launch with mock data' to start")
+        logger.info("🛠  DEV MODE active — /dev/* routes enabled")
+        logger.info("   Frontend → http://localhost:5173")
