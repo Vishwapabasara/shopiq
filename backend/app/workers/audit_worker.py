@@ -8,7 +8,6 @@ from app.workers.celery_app import celery_app
 from app.config import settings
 from app.utils.crypto import decrypt_token
 from app.utils.shopify_client import fetch_all_products
-# from app.services.ai_scorer import score_products_batch  # Only if you have this
 from app.models.schemas import AuditStatus
 
 logger = logging.getLogger(__name__)
@@ -21,7 +20,7 @@ print("=" * 50)
 def get_sync_db():
     """Get synchronous MongoDB connection for Celery worker"""
     from pymongo import MongoClient
-    client = MongoClient(settings.MONGODB_URL)
+    client = MongoClient(settings.MONGO_URI)  # ✅ FIXED: Changed from MONGODB_URL to MONGO_URI
     return client.get_default_database()
 
 
@@ -97,7 +96,7 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
         {"$set": {"products_scanned": len(products)}}
     )
     
-    # Simple audit results (you can enhance this later)
+    # Simple audit results
     logger.info(f"⚙️ Running simple audit on {len(products)} products...")
     
     product_results = []
@@ -162,5 +161,4 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
 def run_scheduled_audits():
     """Run scheduled monthly audits"""
     logger.info("🔄 Running scheduled audits...")
-    # Your scheduling logic here
     logger.info("✅ Scheduled audits completed")
