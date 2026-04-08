@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 
 from app.config import settings
 from app.dependencies import get_db
@@ -17,8 +17,6 @@ from app.utils.crypto import encrypt_token
 from app.utils.shopify_client import get_shop_info
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-# Create logger
 logger = logging.getLogger(__name__)
 
 
@@ -46,6 +44,7 @@ def _verify_hmac(query_params: dict, secret: str) -> bool:
 
 @router.get("/shopify/install")
 async def install(request: Request, shop: str = Query(...)):
+    """Initiate Shopify OAuth flow"""
     logger.info(f"🚀 Install initiated for shop: {shop}")
     
     if not _valid_shop(shop):
@@ -54,18 +53,14 @@ async def install(request: Request, shop: str = Query(...)):
     
     state = secrets.token_urlsafe(32)
     
-    # Log session before storing
-    logger.info(f"📝 Generated state: {state[:10]}...")
-    logger.info(f"🍪 Session ID before: {request.session.get('_session_id', 'NO SESSION')}")
-    
+    # Store state in session
     request.session["oauth_state"] = state
     request.session["oauth_shop"] = shop
     
-    # Log session after storing
-    logger.info(f"✅ Stored state in session: {request.session.get('oauth_state', 'FAILED')[:10]}...")
-    logger.info(f"✅ Stored shop in session: {request.session.get('oauth_shop', 'FAILED')}")
-    logger.info(f"🍪 Full session data: {dict(request.session)}")
+    logger.info(f"📝 Generated state: {state[:10]}...")
+    logger.info(f"✅ Stored in session")
     
+    # Build Shopify OAuth URL
     params = {
         "client_id": settings.SHOPIFY_API_KEY,
         "scope": settings.SHOPIFY_SCOPES,
@@ -74,7 +69,7 @@ async def install(request: Request, shop: str = Query(...)):
     }
     
     auth_url = f"https://{shop}/admin/oauth/authorize?" + urllib.parse.urlencode(params)
-    logger.info(f"🔗 Redirecting to: {auth_url}")
+    logger.info(f"🔗 Redirecting to Shopify OAuth")
     
     return RedirectResponse(url=auth_url, status_code=302)
 
@@ -87,33 +82,31 @@ async def callback(
     state: str = Query(...),
     hmac: str = Query(...),
 ):
+    """Handle Shopify OAuth callback"""
     logger.info(f"🔙 Callback received for shop: {shop}")
-    logger.info(f"📥 Received state: {state[:10]}...")
-    logger.info(f"🍪 Session ID on callback: {request.session.get('_session_id', 'NO SESSION')}")
-    logger.info(f"🍪 Full session data on callback: {dict(request.session)}")
     
+    # Verify state (CSRF protection)
     stored_state = request.session.get("oauth_state")
-    logger.info(f"💾 Stored state from session: {stored_state[:10] if stored_state else 'NONE'}...")
     
     if state != stored_state:
-        logger.error(f"❌ STATE MISMATCH!")
-        logger.error(f"   Received: {state[:10]}...")
-        logger.error(f"   Expected: {stored_state[:10] if stored_state else 'NONE'}...")
-        logger.error(f"   Session contents: {dict(request.session)}")
+        logger.error(f"❌ STATE MISMATCH! Received: {state[:10]}, Expected: {stored_state[:10] if stored_state else 'NONE'}")
         raise HTTPException(403, "State mismatch — possible CSRF")
     
-    logger.info("✅ State matched successfully")
+    logger.info("✅ State matched")
     
+    # Verify shop domain
     if not _valid_shop(shop):
         logger.error(f"❌ Invalid shop domain: {shop}")
         raise HTTPException(400, "Invalid shop domain")
     
+    # Verify HMAC signature
     if not _verify_hmac(dict(request.query_params), settings.SHOPIFY_API_SECRET):
         logger.error(f"❌ HMAC verification failed")
         raise HTTPException(403, "HMAC verification failed")
     
-    logger.info("✅ HMAC verified successfully")
+    logger.info("✅ HMAC verified")
 
+    # Exchange code for access token
     async with httpx.AsyncClient() as client:
         logger.info(f"🔑 Exchanging code for access token...")
         resp = await client.post(
@@ -131,6 +124,7 @@ async def callback(
     scopes = token_data.get("scope", "")
     logger.info(f"✅ Access token obtained, scopes: {scopes}")
 
+    # Get shop info
     shop_info = {}
     try:
         shop_info = await get_shop_info(shop, access_token)
@@ -138,6 +132,7 @@ async def callback(
     except Exception as e:
         logger.warning(f"⚠️ Failed to get shop info: {e}")
 
+    # Save to database
     db = await get_db()
     await aw(db.tenants.update_one(
         {"shop_domain": shop},
@@ -156,41 +151,111 @@ async def callback(
     
     logger.info(f"✅ Tenant record updated in database")
 
+    # Set session
     request.session["shop"] = shop
     request.session.pop("oauth_state", None)
     request.session.pop("oauth_shop", None)
     
-    logger.info(f"✅ OAuth flow completed successfully for {shop}")
+    logger.info(f"✅ OAuth flow completed for {shop}")
     
-    return RedirectResponse(
-        url=f"https://shopiq-iota.vercel.app/dashboard",
-        status_code=302
-    )
+    # Redirect to frontend dashboard with token
+    # Frontend will use this to establish authenticated session
+    frontend_url = f"https://shopiq-iota.vercel.app/auth/callback?shop={shop}&success=true"
+    
+    return RedirectResponse(url=frontend_url, status_code=302)
 
 
 @router.get("/me")
 async def me(request: Request):
+    """Get current authenticated user info"""
     shop = request.session.get("shop")
+    
     if not shop:
         logger.info("ℹ️ /me called but no shop in session")
-        return {"authenticated": False}
+        return JSONResponse(
+            status_code=401,
+            content={"authenticated": False, "error": "No active session"}
+        )
+    
     db = await get_db()
-    tenant = await aw(db.tenants.find_one({"shop_domain": shop}, {"access_token": 0}))
+    tenant = await aw(db.tenants.find_one(
+        {"shop_domain": shop},
+        {"access_token": 0}  # Don't return encrypted token
+    ))
+    
     if not tenant:
         logger.warning(f"⚠️ Shop {shop} in session but not in database")
-        return {"authenticated": False}
+        return JSONResponse(
+            status_code=404,
+            content={"authenticated": False, "error": "Shop not found"}
+        )
+    
     return {
         "authenticated": True,
         "shop_domain": tenant["shop_domain"],
         "shop_name": tenant.get("shop_name", shop),
+        "shop_email": tenant.get("shop_email", ""),
         "plan": tenant.get("plan", "starter"),
         "modules_enabled": tenant.get("modules_enabled", ["audit"]),
+        "installed_at": tenant.get("installed_at").isoformat() if tenant.get("installed_at") else None,
+    }
+
+
+@router.post("/session")
+async def create_session(request: Request, shop: str = Query(...)):
+    """
+    Create a session for a shop (called by frontend after OAuth redirect)
+    This allows the frontend to establish an authenticated session
+    """
+    logger.info(f"📝 Session creation requested for: {shop}")
+    
+    if not _valid_shop(shop):
+        raise HTTPException(400, "Invalid shop domain")
+    
+    # Verify shop exists in database
+    db = await get_db()
+    tenant = await aw(db.tenants.find_one({"shop_domain": shop}))
+    
+    if not tenant:
+        logger.warning(f"⚠️ Shop {shop} not found in database")
+        raise HTTPException(404, "Shop not found - please install the app first")
+    
+    # Set session
+    request.session["shop"] = shop
+    logger.info(f"✅ Session created for {shop}")
+    
+    return {
+        "success": True,
+        "shop": shop,
+        "authenticated": True
     }
 
 
 @router.post("/logout")
 async def logout(request: Request):
+    """Clear session and log out"""
     shop = request.session.get("shop", "unknown")
     logger.info(f"👋 Logout for shop: {shop}")
     request.session.clear()
-    return {"ok": True}
+    return {"success": True, "message": "Logged out successfully"}
+
+
+@router.get("/verify")
+async def verify_shop(shop: str = Query(...)):
+    """
+    Verify if a shop has installed the app (public endpoint)
+    Used by frontend before redirecting to OAuth
+    """
+    if not _valid_shop(shop):
+        raise HTTPException(400, "Invalid shop domain")
+    
+    db = await get_db()
+    tenant = await aw(db.tenants.find_one(
+        {"shop_domain": shop},
+        {"_id": 1}  # Only check existence
+    ))
+    
+    return {
+        "shop": shop,
+        "installed": tenant is not None
+    }
