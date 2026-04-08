@@ -91,7 +91,6 @@ async def callback(
     logger.info(f"📥 Received state: {state[:10]}...")
     logger.info(f"🍪 Session ID on callback: {request.session.get('_session_id', 'NO SESSION')}")
     logger.info(f"🍪 Full session data on callback: {dict(request.session)}")
-     logger.info(f"✅ OAuth flow completed successfully for {shop}")
     
     stored_state = request.session.get("oauth_state")
     logger.info(f"💾 Stored state from session: {stored_state[:10] if stored_state else 'NONE'}...")
@@ -163,8 +162,8 @@ async def callback(
     
     logger.info(f"✅ OAuth flow completed successfully for {shop}")
     
-     return RedirectResponse(
-        url=f"https://shopiq-iota.vercel.app/dashboard?shop={shop}",  # Update this URL
+    return RedirectResponse(
+        url=f"https://shopiq-iota.vercel.app/dashboard?shop={shop}",
         status_code=302
     )
 
