@@ -6,6 +6,7 @@ import { AuditPage } from './pages/AuditPage'
 import { LoginPage } from './pages/LoginPage'
 import { ComingSoonPage } from './pages/ComingSoonPage'
 import { Spinner } from './components/ui'
+import { AuthCallback } from './pages/AuthCallback'
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 
@@ -51,8 +52,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* ✅ Public routes - NO auth required */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
+        {/* ✅ Protected routes - auth required */}
         <Route element={<AuthGuard />}>
           <Route element={<DashboardShell />}>
             <Route path="/dashboard" element={<AuditPage />} />
