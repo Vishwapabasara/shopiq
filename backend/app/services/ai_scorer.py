@@ -8,6 +8,7 @@ using asyncio.gather to stay within rate limits.
 import asyncio
 import json
 import logging
+import time
 from google import genai
 from google.genai import types
 
@@ -80,13 +81,15 @@ async def score_product_ai(
     product: dict,
 ) -> dict:
     """Score a single product with Gemini. Returns parsed result dict."""
+    pid = product.get("id", "unknown")
+    title = product.get("title", "untitled")[:60]
     prompt = _build_prompt(product)
-    
-    # Combine system prompt and user prompt for Gemini
     full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
 
+    logger.info(f"🤖 [AI] Scoring product {pid} — \"{title}\"")
+    t0 = time.monotonic()
+
     try:
-        # New Gemini API call using client
         response = await asyncio.to_thread(
             client.models.generate_content,
             model='gemini-1.5-flash',
@@ -94,26 +97,34 @@ async def score_product_ai(
             config=types.GenerateContentConfig(
                 temperature=0.3,
                 max_output_tokens=800,
-                response_mime_type="application/json",  # Force JSON response
+                response_mime_type="application/json",
             )
         )
 
         raw = response.text
-        
+
         # Clean potential markdown fences from response
         if raw.startswith("```json"):
             raw = raw.split("```json")[1].split("```")[0].strip()
         elif raw.startswith("```"):
             raw = raw.split("```")[1].split("```")[0].strip()
-            
-        return json.loads(raw)
+
+        result = json.loads(raw)
+        elapsed = time.monotonic() - t0
+        logger.info(
+            f"✅ [AI] Product {pid} scored in {elapsed:.2f}s — "
+            f"content_score={result.get('content_score', '?')}"
+        )
+        return result
 
     except json.JSONDecodeError as e:
-        logger.warning(f"Gemini JSON parse error for {product.get('id')}: {e}")
+        elapsed = time.monotonic() - t0
+        logger.warning(f"⚠️ [AI] JSON parse error for product {pid} after {elapsed:.2f}s: {e}")
         logger.debug(f"Raw response: {raw[:200] if 'raw' in locals() else 'N/A'}")
         return _fallback_ai_result()
     except Exception as e:
-        logger.error(f"Gemini error for product {product.get('id')}: {e}")
+        elapsed = time.monotonic() - t0
+        logger.error(f"❌ [AI] Gemini call failed for product {pid} after {elapsed:.2f}s: {e}")
         return _fallback_ai_result()
 
 
