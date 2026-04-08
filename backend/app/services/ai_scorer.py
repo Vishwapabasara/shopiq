@@ -90,15 +90,18 @@ async def score_product_ai(
     t0 = time.monotonic()
 
     try:
-        response = await asyncio.to_thread(
-            client.models.generate_content,
-            model='gemini-1.5-flash',
-            contents=full_prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.3,
-                max_output_tokens=800,
-                response_mime_type="application/json",
-            )
+        response = await asyncio.wait_for(
+            asyncio.to_thread(
+                client.models.generate_content,
+                model='gemini-1.5-flash',
+                contents=full_prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.3,
+                    max_output_tokens=800,
+                    response_mime_type="application/json",
+                )
+            ),
+            timeout=30.0,  # never hang indefinitely
         )
 
         raw = response.text
@@ -117,6 +120,10 @@ async def score_product_ai(
         )
         return result
 
+    except asyncio.TimeoutError:
+        elapsed = time.monotonic() - t0
+        logger.error(f"⏱️ [AI] Timeout after {elapsed:.2f}s for product {pid} — using fallback")
+        return _fallback_ai_result()
     except json.JSONDecodeError as e:
         elapsed = time.monotonic() - t0
         logger.warning(f"⚠️ [AI] JSON parse error for product {pid} after {elapsed:.2f}s: {e}")
@@ -154,26 +161,42 @@ async def score_products_batch(
         logger.warning("GEMINI_API_KEY not set — skipping AI scoring")
         return {}
 
-    # Initialize Gemini client
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
     results: dict[str, dict] = {}
+    total = len(products)
+    num_batches = (total + batch_size - 1) // batch_size
+    t_start = time.monotonic()
 
-    for i in range(0, len(products), batch_size):
+    logger.info(f"🚀 [AI] Starting batch scoring: {total} products in {num_batches} batch(es) of {batch_size}")
+
+    for i in range(0, total, batch_size):
         batch = products[i:i + batch_size]
-        tasks = [score_product_ai(client, p) for p in batch]
+        batch_num = i // batch_size + 1
+        logger.info(f"📦 [AI] Batch {batch_num}/{num_batches} — scoring {len(batch)} products (done so far: {i}/{total})")
+        t_batch = time.monotonic()
 
+        tasks = [score_product_ai(client, p) for p in batch]
         batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
+        ok = 0
         for product, result in zip(batch, batch_results):
             pid = str(product.get("id", ""))
             if isinstance(result, Exception):
-                logger.error(f"AI scoring failed for {pid}: {result}")
+                logger.error(f"❌ [AI] Unhandled exception for {pid}: {result}")
                 results[pid] = _fallback_ai_result()
             else:
                 results[pid] = result
+                ok += 1
+
+        logger.info(
+            f"✅ [AI] Batch {batch_num}/{num_batches} done in {time.monotonic() - t_batch:.2f}s "
+            f"({ok}/{len(batch)} succeeded)"
+        )
 
         # Brief pause between batches to respect rate limits
-        if i + batch_size < len(products):
+        if i + batch_size < total:
+            logger.info(f"⏳ [AI] Pausing 1s before next batch...")
             await asyncio.sleep(1.0)
 
+    logger.info(f"🏁 [AI] All scoring complete — {total} products in {time.monotonic() - t_start:.2f}s total")
     return results
