@@ -11,8 +11,8 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SESSION_SECRET,
     max_age=86400,
-    https_only=False,
-    same_site="none",          # allows cross-port cookie sharing in dev
+     same_site="lax",  # Important for OAuth
+    https_only=True,  # Must be True in production     # allows cross-port cookie sharing in dev
 )
 
 # CORS — allow all localhost ports used by Vite
@@ -26,11 +26,21 @@ app.add_middleware(
         "http://127.0.0.1:5174",
         "http://127.0.0.1:5175",
         settings.APP_URL,
+        "*"
     ],
     allow_credentials=True,    # required for cookies to be sent cross-origin
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Configure logging
+logging.basicConfig(
+    level=settings.LOG_LEVEL,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+logger.info("🚀 ShopIQ starting up...")
 
 from app.routers import auth, audit
 app.include_router(auth.router)

@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     # Dev mode — set to false in production
     DEV_MODE: bool = True
 
+    # Logging
+    LOG_LEVEL: str = "INFO"
+
     class Config:
         env_file = ".env"
         extra = "ignore"

@@ -4,6 +4,7 @@ import secrets
 import urllib.parse
 import re
 import inspect
+import logging  # ADD THIS
 from datetime import datetime, timezone
 
 import httpx
@@ -16,6 +17,9 @@ from app.utils.crypto import encrypt_token
 from app.utils.shopify_client import get_shop_info
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# ADD THIS - Create logger
+logger = logging.getLogger(__name__)
 
 
 async def aw(result):
@@ -42,18 +46,36 @@ def _verify_hmac(query_params: dict, secret: str) -> bool:
 
 @router.get("/shopify/install")
 async def install(request: Request, shop: str = Query(...)):
+    logger.info(f"🚀 Install initiated for shop: {shop}")
+    
     if not _valid_shop(shop):
+        logger.error(f"❌ Invalid shop domain: {shop}")
         raise HTTPException(400, "Invalid shop domain")
+    
     state = secrets.token_urlsafe(32)
+    
+    # Log session before storing
+    logger.info(f"📝 Generated state: {state[:10]}...")
+    logger.info(f"🍪 Session ID before: {request.session.get('_session_id', 'NO SESSION')}")
+    
     request.session["oauth_state"] = state
     request.session["oauth_shop"] = shop
+    
+    # Log session after storing
+    logger.info(f"✅ Stored state in session: {request.session.get('oauth_state', 'FAILED')[:10]}...")
+    logger.info(f"✅ Stored shop in session: {request.session.get('oauth_shop', 'FAILED')}")
+    logger.info(f"🍪 Full session data: {dict(request.session)}")
+    
     params = {
         "client_id": settings.SHOPIFY_API_KEY,
         "scope": settings.SHOPIFY_SCOPES,
         "redirect_uri": f"{settings.APP_URL}/auth/shopify/callback",
         "state": state,
     }
+    
     auth_url = f"https://{shop}/admin/oauth/authorize?" + urllib.parse.urlencode(params)
+    logger.info(f"🔗 Redirecting to: {auth_url}")
+    
     return RedirectResponse(url=auth_url, status_code=302)
 
 
@@ -65,14 +87,35 @@ async def callback(
     state: str = Query(...),
     hmac: str = Query(...),
 ):
-    if state != request.session.get("oauth_state"):
+    logger.info(f"🔙 Callback received for shop: {shop}")
+    logger.info(f"📥 Received state: {state[:10]}...")
+    logger.info(f"🍪 Session ID on callback: {request.session.get('_session_id', 'NO SESSION')}")
+    logger.info(f"🍪 Full session data on callback: {dict(request.session)}")
+    
+    stored_state = request.session.get("oauth_state")
+    logger.info(f"💾 Stored state from session: {stored_state[:10] if stored_state else 'NONE'}...")
+    
+    if state != stored_state:
+        logger.error(f"❌ STATE MISMATCH!")
+        logger.error(f"   Received: {state[:10]}...")
+        logger.error(f"   Expected: {stored_state[:10] if stored_state else 'NONE'}...")
+        logger.error(f"   Session contents: {dict(request.session)}")
         raise HTTPException(403, "State mismatch — possible CSRF")
+    
+    logger.info("✅ State matched successfully")
+    
     if not _valid_shop(shop):
+        logger.error(f"❌ Invalid shop domain: {shop}")
         raise HTTPException(400, "Invalid shop domain")
+    
     if not _verify_hmac(dict(request.query_params), settings.SHOPIFY_API_SECRET):
+        logger.error(f"❌ HMAC verification failed")
         raise HTTPException(403, "HMAC verification failed")
+    
+    logger.info("✅ HMAC verified successfully")
 
     async with httpx.AsyncClient() as client:
+        logger.info(f"🔑 Exchanging code for access token...")
         resp = await client.post(
             f"https://{shop}/admin/oauth/access_token",
             json={
@@ -86,12 +129,14 @@ async def callback(
 
     access_token = token_data["access_token"]
     scopes = token_data.get("scope", "")
+    logger.info(f"✅ Access token obtained, scopes: {scopes}")
 
     shop_info = {}
     try:
         shop_info = await get_shop_info(shop, access_token)
-    except Exception:
-        pass
+        logger.info(f"✅ Shop info retrieved: {shop_info.get('name', 'N/A')}")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to get shop info: {e}")
 
     db = await get_db()
     await aw(db.tenants.update_one(
@@ -108,10 +153,15 @@ async def callback(
         }, "$setOnInsert": {"installed_at": _now()}},
         upsert=True,
     ))
+    
+    logger.info(f"✅ Tenant record updated in database")
 
     request.session["shop"] = shop
     request.session.pop("oauth_state", None)
     request.session.pop("oauth_shop", None)
+    
+    logger.info(f"✅ OAuth flow completed successfully for {shop}")
+    
     return RedirectResponse(url=f"{settings.APP_URL}/dashboard", status_code=302)
 
 
@@ -119,10 +169,12 @@ async def callback(
 async def me(request: Request):
     shop = request.session.get("shop")
     if not shop:
+        logger.info("ℹ️ /me called but no shop in session")
         return {"authenticated": False}
     db = await get_db()
     tenant = await aw(db.tenants.find_one({"shop_domain": shop}, {"access_token": 0}))
     if not tenant:
+        logger.warning(f"⚠️ Shop {shop} in session but not in database")
         return {"authenticated": False}
     return {
         "authenticated": True,
@@ -135,5 +187,7 @@ async def me(request: Request):
 
 @router.post("/logout")
 async def logout(request: Request):
+    shop = request.session.get("shop", "unknown")
+    logger.info(f"👋 Logout for shop: {shop}")
     request.session.clear()
     return {"ok": True}
