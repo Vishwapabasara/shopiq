@@ -67,6 +67,7 @@ export function useAuditHistory() {
 // ── Composed hook: manage active audit flow ───────────────────────────────────
 
 export function useActiveAudit() {
+  // ── Restore last audit ID from localStorage ──────────────────────────────
   const [activeAuditId, setActiveAuditId] = useState<string | null>(() =>
     localStorage.getItem('shopiq_active_audit')
   )
@@ -74,19 +75,45 @@ export function useActiveAudit() {
   const trigger = useTriggerAudit()
   const status = useAuditStatus(activeAuditId)
 
-  const startAudit = useCallback(async () => {
-    const result = await trigger.mutateAsync()
-    const id = result.audit_id
-    setActiveAuditId(id)
-    localStorage.setItem('shopiq_active_audit', id)
-  }, [trigger])
-
-  // Clear stored ID once complete so next visit loads fresh
+  // ── Persist completed audit ID so results survive page refresh ────────────
   useEffect(() => {
-    if (status.data?.status === 'complete') {
-      localStorage.setItem('shopiq_active_audit', activeAuditId ?? '')
+    if (status.data?.status === 'complete' && activeAuditId) {
+      localStorage.setItem('shopiq_active_audit', activeAuditId)
     }
   }, [status.data?.status, activeAuditId])
+
+  // ── Clear stale "running" audits on mount ─────────────────────────────────
+  // If the stored audit is stuck in queued/running (e.g. after a redeploy),
+  // clear it so the user sees the empty state instead of a frozen spinner.
+  useEffect(() => {
+    if (
+      status.data?.status === 'failed' ||
+      // If we have an ID but the API says it doesn't exist (404 → status is undefined after error)
+      (activeAuditId && status.isError)
+    ) {
+      localStorage.removeItem('shopiq_active_audit')
+      setActiveAuditId(null)
+    }
+  }, [status.data?.status, status.isError, activeAuditId])
+
+  // ── Start a brand new audit ───────────────────────────────────────────────
+  const startAudit = useCallback(async () => {
+    // Clear previous audit first so UI resets immediately
+    setActiveAuditId(null)
+    localStorage.removeItem('shopiq_active_audit')
+
+    try {
+      const result = await trigger.mutateAsync()
+      const id = result.audit_id
+      setActiveAuditId(id)
+      localStorage.setItem('shopiq_active_audit', id)
+    } catch {
+      // trigger.error will be set — AuditPage renders the error banner
+    }
+  }, [trigger])
+
+  const isRunning =
+    status.data?.status === 'queued' || status.data?.status === 'running'
 
   return {
     activeAuditId,
@@ -96,5 +123,6 @@ export function useActiveAudit() {
     triggerError: trigger.error,
     statusData: status.data,
     isPolling: status.isFetching,
+    isRunning,
   }
 }

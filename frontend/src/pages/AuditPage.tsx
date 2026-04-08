@@ -15,12 +15,13 @@ export function AuditPage() {
     isTriggering,
     triggerError,
     statusData,
+    isRunning,        // ← from hook now
   } = useActiveAudit()
 
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
 
   const isComplete = statusData?.status === 'complete'
-  const isRunning  = statusData?.status === 'queued' || statusData?.status === 'running'
+  // ← removed local isRunning definition
   const isFailed   = statusData?.status === 'failed'
 
   const { data: results, isLoading: resultsLoading } = useAuditResults(
@@ -73,8 +74,8 @@ export function AuditPage() {
           </div>
         )}
 
-        {/* No audit yet */}
-        {!activeAuditId && !isRunning && (
+        {/* No audit yet — show empty state */}
+        {!activeAuditId && !isRunning && !isFailed && (
           <EmptyState
             icon="◈"
             title="Run your first audit"
@@ -103,6 +104,7 @@ export function AuditPage() {
             />
           </>
         )}
+
       </div>
 
       {/* Product detail drawer */}
