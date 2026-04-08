@@ -32,6 +32,11 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
     """Trigger a new audit for the authenticated shop"""
     logger.info(f"🔍 Audit triggered for shop: {tenant.get('shop_domain')}")
     
+    # Log Celery configuration
+    from app.celery_app import celery_app
+    logger.info(f"📡 Celery broker: {celery_app.conf.broker_url}")
+    logger.info(f"📡 Celery backend: {celery_app.conf.result_backend}")
+    
     db = await get_db()
 
     # Check if audit already running
@@ -65,6 +70,8 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
     try:
         # Queue the Celery task
         logger.info(f"📤 Queuing Celery task for audit {audit_id}")
+        logger.info(f"📦 Shop domain: {tenant['shop_domain']}")
+        logger.info(f"🔑 Access token present: {bool(tenant.get('access_token'))}")
         
         task = run_audit_task.delay(
             audit_id,
@@ -72,7 +79,9 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
             tenant["access_token"],
         )
         
-        logger.info(f"✅ Celery task queued: {task.id}")
+        logger.info(f"✅ Celery task queued successfully")
+        logger.info(f"📋 Task ID: {task.id}")
+        logger.info(f"📋 Task state: {task.state}")
 
         # Store task ID
         await aw(db.audits.update_one(
@@ -89,7 +98,7 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
         )
         
     except Exception as e:
-        logger.error(f"❌ Failed to queue audit task: {e}")
+        logger.error(f"❌ Failed to queue audit task: {e}", exc_info=True)
         
         # Mark audit as failed
         await aw(db.audits.update_one(
@@ -101,6 +110,53 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
         ))
         
         raise HTTPException(500, f"Failed to start audit: {str(e)}")
+
+
+@router.get("/test-celery")
+async def test_celery():
+    """Test Celery connection and task queueing"""
+    from app.celery_app import celery_app
+    import time
+    
+    try:
+        # Check if Celery is configured
+        broker_url = celery_app.conf.broker_url
+        backend_url = celery_app.conf.result_backend
+        
+        logger.info(f"🔍 Testing Celery connection...")
+        logger.info(f"📡 Broker: {broker_url}")
+        logger.info(f"📡 Backend: {backend_url}")
+        
+        # Try to send a test task
+        task = run_audit_task.delay(
+            "test-audit-id",
+            "test-shop.myshopify.com",
+            "test-access-token"
+        )
+        
+        logger.info(f"✅ Test task queued: {task.id}")
+        
+        # Wait a bit and check status
+        time.sleep(1)
+        
+        return {
+            "success": True,
+            "celery_connected": True,
+            "broker": broker_url,
+            "backend": backend_url,
+            "test_task_id": task.id,
+            "test_task_state": task.state,
+            "message": "Celery is working! Check the worker logs for task execution."
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Celery test failed: {e}", exc_info=True)
+        return {
+            "success": False,
+            "celery_connected": False,
+            "error": str(e),
+            "broker": celery_app.conf.broker_url if celery_app else "NOT_CONFIGURED",
+        }
 
 
 @router.get("/{audit_id}/status", response_model=AuditStatusResponse)
