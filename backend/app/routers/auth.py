@@ -307,3 +307,24 @@ async def force_reinstall(request: Request):
     request.session.clear()
     
     return {"success": True, "message": "Tenant deleted. Please reinstall the app."}
+
+@router.get("/test-install-url")
+async def test_install_url(shop: str = "test.myshopify.com"):
+    """Test what the OAuth URL looks like"""
+    from urllib.parse import urlencode
+    
+    params = {
+        "client_id": settings.SHOPIFY_API_KEY,
+        "scope": settings.SHOPIFY_SCOPES,
+        "redirect_uri": f"{settings.APP_URL}/auth/shopify/callback",
+        "state": "test-state-123",
+    }
+    
+    auth_url = f"https://{shop}/admin/oauth/authorize?" + urlencode(params)
+    
+    return {
+        "shopify_api_key": settings.SHOPIFY_API_KEY[:10] + "...",
+        "shopify_scopes": settings.SHOPIFY_SCOPES,
+        "app_url": settings.APP_URL,
+        "full_oauth_url": auth_url,
+    }
