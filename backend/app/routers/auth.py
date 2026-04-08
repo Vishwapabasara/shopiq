@@ -163,7 +163,7 @@ async def callback(
     logger.info(f"✅ OAuth flow completed successfully for {shop}")
     
     return RedirectResponse(
-        url=f"https://shopiq-iota.vercel.app/dashboard?shop={shop}",
+        url=f"https://shopiq-iota.vercel.app/dashboard",
         status_code=302
     )
 
