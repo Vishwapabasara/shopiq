@@ -259,3 +259,28 @@ async def verify_shop(shop: str = Query(...)):
         "shop": shop,
         "installed": tenant is not None
     }
+
+@router.post("/login")
+async def login(request: Request, shop: str = Query(...)):
+    """
+    Login endpoint - used by frontend to initiate OAuth
+    Returns the install URL for the frontend to redirect to
+    """
+    logger.info(f"🔐 Login requested for shop: {shop}")
+    
+    if not _valid_shop(shop):
+        raise HTTPException(400, "Invalid shop domain")
+    
+    # Check if shop is already installed
+    db = await get_db()
+    tenant = await aw(db.tenants.find_one({"shop_domain": shop}))
+    
+    install_url = f"{settings.APP_URL}/auth/shopify/install?shop={shop}"
+    
+    return {
+        "success": True,
+        "shop": shop,
+        "installed": tenant is not None,
+        "install_url": install_url,
+        "action": "redirect"  # Frontend should redirect to install_url
+    }
