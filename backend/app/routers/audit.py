@@ -33,7 +33,7 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
     logger.info(f"🔍 Audit triggered for shop: {tenant.get('shop_domain')}")
     
     # Log Celery configuration
-    from app.celery_app import celery_app
+    from app.workers.celery_app import celery_app
     logger.info(f"📡 Celery broker: {celery_app.conf.broker_url}")
     logger.info(f"📡 Celery backend: {celery_app.conf.result_backend}")
     
@@ -115,7 +115,7 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
 @router.get("/test-celery")
 async def test_celery():
     """Test Celery connection and task queueing"""
-    from app.celery_app import celery_app
+    from app.workers.celery_app import celery_app
     import time
     
     try:
