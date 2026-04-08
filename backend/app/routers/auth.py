@@ -284,3 +284,18 @@ async def login(request: Request, shop: str = Query(...)):
         "install_url": install_url,
         "action": "redirect"  # Frontend should redirect to install_url
     }
+
+ @router.post("/force-reinstall")
+async def force_reinstall(request: Request):
+    """Delete tenant and force reinstall"""
+    shop = request.session.get("shop")
+    if not shop:
+        raise HTTPException(401, "Not authenticated")
+    
+    db = await get_db()
+    result = await aw(db.tenants.delete_one({"shop_domain": shop}))
+    
+    logger.info(f"🗑️ Deleted tenant: {shop}")
+    request.session.clear()
+    
+    return {"success": True, "message": "Tenant deleted. Please reinstall the app."}
