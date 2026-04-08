@@ -280,3 +280,28 @@ async def reset_audit(audit_id: str, tenant: dict = Depends(get_current_tenant))
 
     logger.info(f"✅ Audit {audit_id} reset to failed state")
     return {"success": True, "message": "Audit reset - you can now run a new audit"}
+
+
+@router.get("/debug-celery")
+async def debug_celery():
+    """Debug Celery connection"""
+    from app.workers.celery_app import celery_app
+    from celery import current_app
+    
+    try:
+        # Get active tasks
+        inspector = current_app.control.inspect()
+        
+        active = inspector.active()
+        scheduled = inspector.scheduled()
+        reserved = inspector.reserved()
+        
+        return {
+            "broker": celery_app.conf.broker_url[:50],
+            "backend": celery_app.conf.result_backend[:50],
+            "active_tasks": active,
+            "scheduled_tasks": scheduled,
+            "reserved_tasks": reserved,
+        }
+    except Exception as e:
+        return {"error": str(e)}
