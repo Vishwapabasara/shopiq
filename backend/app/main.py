@@ -1,3 +1,4 @@
+import logging  # ✅ ADD THIS LINE
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -11,8 +12,8 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SESSION_SECRET,
     max_age=86400,
-     same_site="lax",  # Important for OAuth
-    https_only=True,  # Must be True in production     # allows cross-port cookie sharing in dev
+    same_site="lax",  # Important for OAuth
+    https_only=True,  # Must be True in production
 )
 
 # CORS — allow all localhost ports used by Vite

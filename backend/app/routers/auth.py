@@ -3,8 +3,8 @@ import hmac
 import secrets
 import urllib.parse
 import re
+import logging
 import inspect
-import logging  # ADD THIS
 from datetime import datetime, timezone
 
 import httpx
@@ -18,7 +18,7 @@ from app.utils.shopify_client import get_shop_info
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# ADD THIS - Create logger
+# Create logger
 logger = logging.getLogger(__name__)
 
 
