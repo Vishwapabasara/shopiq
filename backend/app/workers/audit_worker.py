@@ -8,12 +8,11 @@ from app.workers.celery_app import celery_app
 from app.config import settings
 from app.utils.crypto import decrypt_token
 from app.utils.shopify_client import fetch_all_products
-from app.services.audit_engine import run_full_audit
+# from app.services.ai_scorer import score_products_batch  # Only if you have this
 from app.models.schemas import AuditStatus
 
 logger = logging.getLogger(__name__)
 
-# Print for debugging
 print("=" * 50)
 print("🔧 AUDIT WORKER MODULE LOADED")
 print("=" * 50)
@@ -28,10 +27,7 @@ def get_sync_db():
 
 @celery_app.task(bind=True, name='app.workers.audit_worker.run_audit_task')
 def run_audit_task(self: Task, audit_id: str, shop_domain: str, encrypted_token: str):
-    """
-    Run product audit task in Celery worker
-    Uses synchronous operations for Celery compatibility
-    """
+    """Run product audit task in Celery worker"""
     logger.info(f"🚀 Task received for audit: {audit_id}")
     logger.info(f"📦 Shop: {shop_domain}")
     
@@ -101,10 +97,41 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
         {"$set": {"products_scanned": len(products)}}
     )
     
-    # Run audit engine
-    logger.info(f"⚙️ Running audit engine on {len(products)} products...")
-    audit_results = await run_full_audit(products)
-    logger.info(f"✅ Audit engine completed")
+    # Simple audit results (you can enhance this later)
+    logger.info(f"⚙️ Running simple audit on {len(products)} products...")
+    
+    product_results = []
+    for product in products:
+        # Simple scoring logic
+        score = 50  # Base score
+        issues = []
+        
+        # Check for basic issues
+        if not product.get('body_html'):
+            issues.append({"severity": "warning", "message": "Missing description"})
+            score -= 10
+        
+        if not product.get('images'):
+            issues.append({"severity": "critical", "message": "Missing images"})
+            score -= 20
+        
+        if len(product.get('title', '')) < 10:
+            issues.append({"severity": "warning", "message": "Title too short"})
+            score -= 5
+        
+        product_results.append({
+            "shopify_product_id": str(product['id']),
+            "title": product.get('title', 'Untitled'),
+            "score": max(0, score),
+            "issues": issues
+        })
+    
+    # Calculate overall scores
+    overall_score = sum(p['score'] for p in product_results) / len(product_results) if product_results else 0
+    critical_count = sum(1 for p in product_results for i in p['issues'] if i['severity'] == 'critical')
+    warning_count = sum(1 for p in product_results for i in p['issues'] if i['severity'] == 'warning')
+    
+    logger.info(f"✅ Audit completed: {len(products)} products, score: {overall_score:.1f}")
     
     # Save results to database
     logger.info(f"💾 Saving audit results to database...")
@@ -113,12 +140,11 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
         {"$set": {
             "status": AuditStatus.COMPLETE.value,
             "products_scanned": len(products),
-            "product_results": audit_results["products"],
-            "overall_score": audit_results["overall_score"],
-            "category_scores": audit_results.get("category_scores", {}),
-            "critical_count": audit_results.get("critical_count", 0),
-            "warning_count": audit_results.get("warning_count", 0),
-            "info_count": audit_results.get("info_count", 0),
+            "product_results": product_results,
+            "overall_score": overall_score,
+            "critical_count": critical_count,
+            "warning_count": warning_count,
+            "info_count": 0,
             "completed_at": datetime.utcnow()
         }}
     )
@@ -128,7 +154,7 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
     return {
         "audit_id": audit_id,
         "products_scanned": len(products),
-        "overall_score": audit_results["overall_score"]
+        "overall_score": overall_score
     }
 
 
@@ -136,10 +162,5 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
 def run_scheduled_audits():
     """Run scheduled monthly audits"""
     logger.info("🔄 Running scheduled audits...")
-    
-    db = get_sync_db()
-    
-    # Find tenants that need monthly audits
-    # ... your scheduling logic ...
-    
+    # Your scheduling logic here
     logger.info("✅ Scheduled audits completed")
