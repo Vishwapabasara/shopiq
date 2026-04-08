@@ -252,3 +252,30 @@ async def get_product_detail(
         raise HTTPException(404, "Product not found in this audit")
 
     return product
+
+    @router.post("/{audit_id}/reset")
+async def reset_audit(audit_id: str, tenant: dict = Depends(get_current_tenant)):
+    """Reset a stuck audit back to failed state"""
+    logger.info(f"🔄 Resetting audit: {audit_id}")
+    
+    db = await get_db()
+    
+    result = await aw(db.audits.update_one(
+        {
+            "_id": ObjectId(audit_id),
+            "tenant_id": str(tenant["_id"]),
+        },
+        {
+            "$set": {
+                "status": AuditStatus.FAILED.value,
+                "error_message": "Audit was reset - please run a new audit"
+            }
+        }
+    ))
+    
+    if result.matched_count == 0:
+        raise HTTPException(404, "Audit not found")
+    
+    logger.info(f"✅ Audit {audit_id} reset to failed state")
+    
+    return {"success": True, "message": "Audit reset - you can now run a new audit"}
