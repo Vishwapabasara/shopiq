@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
 
     # Dev mode — set to false in production
-    DEV_MODE: bool = True
+    DEV_MODE: bool = False
 
     # Logging
     LOG_LEVEL: str = "INFO"
