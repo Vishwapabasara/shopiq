@@ -18,3 +18,12 @@ def encrypt_token(token: str) -> str:
 def decrypt_token(encrypted: str) -> str:
     """Decrypt a stored Shopify access token."""
     return _get_fernet().decrypt(encrypted.encode()).decode()
+
+def decrypt_token(encrypted: str) -> str:
+    """Decrypt access token - or return as-is if it's a custom app token"""
+    # Custom app tokens start with 'shpat_' and don't need decryption
+    if encrypted.startswith('shpat_'):
+        return encrypted
+    
+    # OAuth tokens are encrypted
+    return _get_fernet().decrypt(encrypted.encode()).decode()
