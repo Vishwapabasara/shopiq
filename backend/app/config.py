@@ -7,11 +7,12 @@ class Settings(BaseSettings):
     SHOPIFY_API_KEY: str = ""
     SHOPIFY_API_SECRET: str = ""
     # In app/config.py
-    SHOPIFY_SCOPES: str = "read_products,read_inventory,read_orders"
+    SHOPIFY_SCOPES: str = "read_inventory,read_orders,read_products,write_products"
 
     # App
     APP_URL: str = "http://localhost:8000"
     SESSION_SECRET: str = "dev-secret-replace-in-production"
+    FRONTEND_URL: str = "https://shopiq-iota.vercel.app"
 
     # MongoDB
     MONGO_URI: str = "mongodb://localhost:27017/shopiq"
