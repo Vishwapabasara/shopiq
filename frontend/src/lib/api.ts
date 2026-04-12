@@ -10,8 +10,8 @@ const BASE_URL = (
 )
 
 export const api = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
+   baseURL: import.meta.env.DEV ? 'http://localhost:8000' : import.meta.env.VITE_API_URL || '',
+  withCredentials: true,   // ← CRITICAL — sends cookies cross-origin
   headers: { 'Content-Type': 'application/json' },
 })
 
