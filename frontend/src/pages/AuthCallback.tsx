@@ -1,13 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { api } from '../lib/api'  // ← use axios instance, not fetch
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState('Completing authentication...')
+  const called = useRef(false)  // ← prevent double-call in StrictMode
 
   useEffect(() => {
+    if (called.current) return  // ← prevent double execution
+    called.current = true
+
     const shop = searchParams.get('shop')
     const success = searchParams.get('success')
 
@@ -23,35 +28,20 @@ export function AuthCallback() {
       return
     }
 
-    // Create session on backend
-    const BACKEND_URL = 'https://shopiq-production.up.railway.app'
-    
     setStatus('Creating session...')
 
-    fetch(`${BACKEND_URL}/auth/session?shop=${shop}`, {
-      method: 'POST',
-      credentials: 'include',
-    })
+    // Use axios api instance — same withCredentials config as /auth/me
+    api.post(`/auth/session?shop=${shop}`)
       .then(res => {
-        if (!res.ok) {
-          throw new Error(`Session creation failed: ${res.status}`)
-        }
-        return res.json()
-      })
-      .then(data => {
-        console.log('✅ Session created:', data)
+        console.log('✅ Session created:', res.data)
         setStatus('Redirecting to dashboard...')
-        
-        // Small delay to show success message
-        setTimeout(() => {
-          navigate(`/dashboard?shop=${shop}`)
-        }, 500)
+        setTimeout(() => navigate('/dashboard'), 500)
       })
       .catch(err => {
         console.error('❌ Session creation error:', err)
-        setError(`Failed to create session: ${err.message}`)
+        setError(`Failed to create session: ${err.response?.data?.detail ?? err.message}`)
       })
-  }, [searchParams, navigate])
+  }, [])  // ← empty deps, ref handles dedup
 
   if (error) {
     return (
@@ -62,11 +52,8 @@ export function AuthCallback() {
           </div>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">Authentication Failed</h2>
           <p className="text-sm text-slate-600 mb-6">{error}</p>
-          <button
-            onClick={() => navigate('/')}
-            className="btn-primary"
-          >
-            Back to Home
+          <button onClick={() => navigate('/login')} className="btn-primary">
+            Back to Login
           </button>
         </div>
       </div>
