@@ -48,6 +48,7 @@ def _verify_hmac(query_params: dict, secret: str) -> bool:
 
 # ── GET /shopify/install ──────────────────────────────────────────────────────
 
+# In /install endpoint — save state to DB instead of session
 @router.get("/shopify/install")
 async def install(request: Request, shop: str = Query(...)):
     logger.info(f"🚀 Install initiated for shop: {shop}")
@@ -56,11 +57,18 @@ async def install(request: Request, shop: str = Query(...)):
         raise HTTPException(400, "Invalid shop domain")
 
     state = secrets.token_urlsafe(32)
-    request.session["oauth_state"] = state
-    request.session["oauth_shop"] = shop
 
-    logger.info(f"📝 Generated state: {state[:10]}...")
-    logger.info(f"✅ Stored in session")
+    # ← Store in DB instead of session (more reliable cross-origin)
+    db = await get_db()
+    await aw(db.oauth_states.update_one(
+        {"shop": shop},
+        {"$set": {
+            "shop": shop,
+            "state": state,
+            "created_at": _now()
+        }},
+        upsert=True
+    ))
 
     params = {
         "client_id": settings.SHOPIFY_API_KEY,
@@ -75,28 +83,32 @@ async def install(request: Request, shop: str = Query(...)):
     return RedirectResponse(url=auth_url, status_code=302)
 
 
-# ── GET /shopify/callback ─────────────────────────────────────────────────────
-
+# In /callback endpoint — verify state from DB instead of session
 @router.get("/shopify/callback")
 async def callback(
     request: Request,
     shop: str = Query(...),
     code: str = Query(...),
     state: str = Query(...),
-    hmac: str = Query(...),    # ← keep as query param name (Shopify requires it)
+    hmac: str = Query(...),
 ):
     logger.info(f"🔙 Callback received for shop: {shop}")
 
-    stored_state = request.session.get("oauth_state")
-    if state != stored_state:
-        logger.error(f"❌ STATE MISMATCH!")
+    # ← Verify state from DB
+    db = await get_db()
+    stored = await aw(db.oauth_states.find_one({"shop": shop}))
+
+    if not stored or stored.get("state") != state:
+        logger.error(f"❌ STATE MISMATCH! stored={stored}")
         raise HTTPException(403, "State mismatch — possible CSRF")
-    logger.info("✅ State matched")
+
+    # Clean up used state
+    await aw(db.oauth_states.delete_one({"shop": shop}))
+    logger.info("✅ State matched and cleaned up")
 
     if not _valid_shop(shop):
         raise HTTPException(400, "Invalid shop domain")
 
-    # Use hmac_lib for verification (not the query param)
     if not _verify_hmac(dict(request.query_params), settings.SHOPIFY_API_SECRET):
         logger.error(f"❌ HMAC verification failed")
         raise HTTPException(403, "HMAC verification failed")
@@ -120,9 +132,6 @@ async def callback(
     scopes = token_data.get("scope", "")
     logger.info(f"✅ Access token obtained, scopes: {scopes}")
 
-    if not scopes:
-        logger.error("❌ Empty scopes returned from Shopify — check app configuration")
-
     # Get shop info
     shop_info = {}
     try:
@@ -131,8 +140,7 @@ async def callback(
     except Exception as e:
         logger.warning(f"⚠️ Failed to get shop info: {e}")
 
-    # Save to database
-    db = await get_db()
+    # Save tenant to DB
     await aw(db.tenants.update_one(
         {"shop_domain": shop},
         {"$set": {
@@ -150,13 +158,10 @@ async def callback(
     logger.info(f"✅ Tenant record updated in database")
 
     request.session["shop"] = shop
-    request.session.pop("oauth_state", None)
-    request.session.pop("oauth_shop", None)
     logger.info(f"✅ OAuth flow completed for {shop}")
 
     frontend_url = f"{settings.FRONTEND_URL}/auth/callback?shop={shop}&success=true"
     return RedirectResponse(url=frontend_url, status_code=302)
-
 
 # ── GET /me ───────────────────────────────────────────────────────────────────
 

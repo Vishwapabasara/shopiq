@@ -14,7 +14,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SESSION_SECRET,
     max_age=86400,
-    same_site="none",  # Required for cross-origin cookies
+    same_site="lax", 
     https_only=True,
     session_cookie="shopiq_session",
 )
