@@ -100,23 +100,40 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
     logger.info(f"⚙️ Running simple audit on {len(products)} products...")
     
     product_results = []
+    total_description_score = 0
+    total_image_score = 0
+    total_title_score = 0
+    
     for product in products:
         # Simple scoring logic
         score = 50  # Base score
         issues = []
         
+        # Individual component scores
+        description_score = 50
+        image_score = 50
+        title_score = 50
+        
         # Check for basic issues
         if not product.get('body_html'):
             issues.append({"severity": "warning", "message": "Missing description"})
             score -= 10
+            description_score = 0
         
         if not product.get('images'):
             issues.append({"severity": "critical", "message": "Missing images"})
             score -= 20
+            image_score = 0
         
         if len(product.get('title', '')) < 10:
             issues.append({"severity": "warning", "message": "Title too short"})
             score -= 5
+            title_score = 30
+        
+        # Accumulate category scores
+        total_description_score += description_score
+        total_image_score += image_score
+        total_title_score += title_score
         
         product_results.append({
             "shopify_product_id": str(product['id']),
@@ -126,9 +143,17 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
         })
     
     # Calculate overall scores
-    overall_score = sum(p['score'] for p in product_results) / len(product_results) if product_results else 0
+    num_products = len(product_results)
+    overall_score = sum(p['score'] for p in product_results) / num_products if num_products else 0
     critical_count = sum(1 for p in product_results for i in p['issues'] if i['severity'] == 'critical')
     warning_count = sum(1 for p in product_results for i in p['issues'] if i['severity'] == 'warning')
+    
+    # Calculate category scores
+    category_scores = {
+        "Content Quality": round(total_description_score / num_products, 1) if num_products else 0,
+        "Visual Appeal": round(total_image_score / num_products, 1) if num_products else 0,
+        "Title Optimization": round(total_title_score / num_products, 1) if num_products else 0,
+    }
     
     logger.info(f"✅ Audit completed: {len(products)} products, score: {overall_score:.1f}")
     
@@ -141,6 +166,7 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
             "products_scanned": len(products),
             "product_results": product_results,
             "overall_score": overall_score,
+            "category_scores": category_scores,  # ✅ ADD THIS
             "critical_count": critical_count,
             "warning_count": warning_count,
             "info_count": 0,
@@ -155,7 +181,6 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
         "products_scanned": len(products),
         "overall_score": overall_score
     }
-
 
 @celery_app.task(name='app.workers.audit_worker.run_scheduled_audits')
 def run_scheduled_audits():
