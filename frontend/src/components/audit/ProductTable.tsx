@@ -34,8 +34,9 @@ export function ProductTable({ auditId, onSelectProduct }: Props) {
     offset,
   })
 
-  const products = data?.products ?? []
-  const pagination = data?.pagination
+  const products = data?.product_results ?? []
+  const total = data?.total_products ?? 0
+  const pagination = data ? { total, has_more: offset + LIMIT < total } : undefined
 
   return (
     <div className="card overflow-hidden">
@@ -146,7 +147,7 @@ export function ProductTable({ auditId, onSelectProduct }: Props) {
           {pagination && (pagination.has_more || offset > 0) && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 bg-slate-50/50">
               <span className="text-xs text-slate-500">
-                Showing {offset + 1}–{Math.min(offset + LIMIT, pagination.total)} of {pagination.total}
+                Showing {offset + 1}–{Math.min(offset + LIMIT, total)} of {total}
               </span>
               <div className="flex gap-2">
                 <button

@@ -57,9 +57,8 @@ export interface AuditResults {
   warning_count: number
   info_count: number
   completed_at: string
-  total_filtered: number
-  products: ProductResult[]
-  pagination: { offset: number; limit: number; total: number; has_more: boolean }
+  product_results: ProductResult[]
+  total_products: number
 }
 
 export interface AuditStatus {
