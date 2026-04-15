@@ -170,65 +170,39 @@ async def get_audit_status(audit_id: str, tenant: dict = Depends(get_current_ten
 # ── GET /{audit_id}/results ───────────────────────────────────────────────────
 
 @router.get("/{audit_id}/results")
-async def get_audit_results(
-    audit_id: str,
-    severity: str | None = None,
-    sort: str = "score_asc",
-    limit: int = 50,
-    offset: int = 0,
-    tenant: dict = Depends(get_current_tenant),
-):
+async def get_audit_results(audit_id: str, tenant: dict = Depends(get_current_tenant)):
+    """Get detailed audit results"""
+    logger.info(f"📊 Fetching results for audit: {audit_id}")
+    
     db = await get_db()
+    
     try:
         audit = await aw(db.audits.find_one({
             "_id": ObjectId(audit_id),
-            "tenant_id": str(tenant["_id"]),
+            "tenant_id": str(tenant["_id"])
         }))
+        
+        if not audit:
+            raise HTTPException(404, "Audit not found")
+        
+        # Ensure all fields exist with defaults
+        return {
+            "audit_id": str(audit["_id"]),
+            "status": audit.get("status", "unknown"),
+            "products_scanned": audit.get("products_scanned", 0),
+            "overall_score": audit.get("overall_score", 0),
+            "category_scores": audit.get("category_scores", {}),
+            "critical_count": audit.get("critical_count", 0),
+            "warning_count": audit.get("warning_count", 0),
+            "info_count": audit.get("info_count", 0),
+            "product_results": audit.get("product_results", []),
+            "created_at": audit.get("created_at").isoformat() if audit.get("created_at") else None,
+            "completed_at": audit.get("completed_at").isoformat() if audit.get("completed_at") else None,
+            "error_message": audit.get("error_message"),
+        }
     except Exception as e:
-        raise HTTPException(500, f"Database error: {str(e)}")
-
-    if not audit:
-        raise HTTPException(404, "Audit not found")
-
-    if audit["status"] != AuditStatus.COMPLETE.value:
-        raise HTTPException(400, f"Audit not complete yet (status: {audit['status']})")
-
-    products = audit.get("product_results", [])
-
-    if severity in ("critical", "warning", "info"):
-        products = [p for p in products if any(
-            i["severity"] == severity for i in p.get("issues", [])
-        )]
-
-    if sort == "score_asc":
-        products.sort(key=lambda x: x["score"])
-    elif sort == "score_desc":
-        products.sort(key=lambda x: x["score"], reverse=True)
-    elif sort == "alpha":
-        products.sort(key=lambda x: x["title"].lower())
-
-    total = len(products)
-    paginated = products[offset:offset + limit]
-
-    return {
-        "audit_id": audit_id,
-        "overall_score": audit.get("overall_score"),
-        "category_scores": audit.get("category_scores"),
-        "products_scanned": audit.get("products_scanned", 0),
-        "critical_count": audit.get("critical_count", 0),
-        "warning_count": audit.get("warning_count", 0),
-        "info_count": audit.get("info_count", 0),
-        "completed_at": audit.get("completed_at"),
-        "total_filtered": total,
-        "products": paginated,
-        "pagination": {
-            "offset": offset,
-            "limit": limit,
-            "total": total,
-            "has_more": offset + limit < total,
-        },
-    }
-
+        logger.error(f"❌ Error fetching audit results: {e}", exc_info=True)
+        raise HTTPException(500, f"Error fetching results: {str(e)}")
 
 # ── GET /{audit_id}/product/{product_id} ─────────────────────────────────────
 
