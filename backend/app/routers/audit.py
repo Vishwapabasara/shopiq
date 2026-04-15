@@ -137,30 +137,36 @@ async def get_audit_history(
 
 # ── GET /{audit_id}/status ────────────────────────────────────────────────────
 
-@router.get("/{audit_id}/status", response_model=AuditStatusResponse)
+@router.get("/{audit_id}/status")
 async def get_audit_status(audit_id: str, tenant: dict = Depends(get_current_tenant)):
+    """Get audit status"""
+    logger.info(f"📊 Checking status for audit: {audit_id}")
+    
     db = await get_db()
+    
     try:
         audit = await aw(db.audits.find_one({
             "_id": ObjectId(audit_id),
-            "tenant_id": str(tenant["_id"]),
+            "tenant_id": str(tenant["_id"])
         }))
+        
+        if not audit:
+            raise HTTPException(404, "Audit not found")
+        
+        # Convert ObjectId to string and prepare response
+        return {
+            "audit_id": str(audit["_id"]),
+            "status": audit.get("status"),
+            "products_scanned": audit.get("products_scanned", 0),
+            "overall_score": audit.get("overall_score"),
+            "completed_at": audit.get("completed_at").isoformat() if audit.get("completed_at") else None,
+            "error_message": audit.get("error_message"),
+            "critical_count": audit.get("critical_count", 0),
+            "warning_count": audit.get("warning_count", 0),
+        }
     except Exception as e:
-        raise HTTPException(500, f"Database error: {str(e)}")
-
-    if not audit:
-        raise HTTPException(404, "Audit not found")
-
-    return AuditStatusResponse(
-        audit_id=audit_id,
-        status=audit["status"],
-        products_scanned=audit.get("products_scanned", 0),
-        overall_score=audit.get("overall_score"),
-        completed_at=audit.get("completed_at"),
-        error_message=audit.get("error_message"),
-    )
-
-
+        logger.error(f"❌ Error fetching audit status: {e}", exc_info=True)
+        raise HTTPException(500, f"Error fetching audit status: {str(e)}")
 # ── GET /{audit_id}/results ───────────────────────────────────────────────────
 
 @router.get("/{audit_id}/results")
