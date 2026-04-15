@@ -170,9 +170,15 @@ async def get_audit_status(audit_id: str, tenant: dict = Depends(get_current_ten
 # ── GET /{audit_id}/results ───────────────────────────────────────────────────
 
 @router.get("/{audit_id}/results")
-async def get_audit_results(audit_id: str, tenant: dict = Depends(get_current_tenant)):
-    """Get detailed audit results"""
-    logger.info(f"📊 Fetching results for audit: {audit_id}")
+async def get_audit_results(
+    audit_id: str,
+    tenant: dict = Depends(get_current_tenant),
+    sort: str = None,  # ✅ ADD THIS
+    limit: int = 100,  # ✅ ADD THIS
+    offset: int = 0,   # ✅ ADD THIS
+):
+    """Get detailed audit results with optional sorting and pagination"""
+    logger.info(f"📊 Fetching results for audit: {audit_id} (sort={sort}, limit={limit}, offset={offset})")
     
     db = await get_db()
     
@@ -185,6 +191,24 @@ async def get_audit_results(audit_id: str, tenant: dict = Depends(get_current_te
         if not audit:
             raise HTTPException(404, "Audit not found")
         
+        # Get product results
+        product_results = audit.get("product_results", [])
+        
+        # Apply sorting if requested
+        if sort:
+            if sort == "score_asc":
+                product_results = sorted(product_results, key=lambda x: x.get('score', 0))
+            elif sort == "score_desc":
+                product_results = sorted(product_results, key=lambda x: x.get('score', 0), reverse=True)
+            elif sort == "title_asc":
+                product_results = sorted(product_results, key=lambda x: x.get('title', '').lower())
+            elif sort == "title_desc":
+                product_results = sorted(product_results, key=lambda x: x.get('title', '').lower(), reverse=True)
+        
+        # Apply pagination
+        total_products = len(product_results)
+        paginated_results = product_results[offset:offset + limit]
+        
         # Ensure all fields exist with defaults
         return {
             "audit_id": str(audit["_id"]),
@@ -195,7 +219,8 @@ async def get_audit_results(audit_id: str, tenant: dict = Depends(get_current_te
             "critical_count": audit.get("critical_count", 0),
             "warning_count": audit.get("warning_count", 0),
             "info_count": audit.get("info_count", 0),
-            "product_results": audit.get("product_results", []),
+            "product_results": paginated_results,  # ✅ PAGINATED
+            "total_products": total_products,  # ✅ ADD TOTAL COUNT
             "created_at": audit.get("created_at").isoformat() if audit.get("created_at") else None,
             "completed_at": audit.get("completed_at").isoformat() if audit.get("completed_at") else None,
             "error_message": audit.get("error_message"),
@@ -203,7 +228,6 @@ async def get_audit_results(audit_id: str, tenant: dict = Depends(get_current_te
     except Exception as e:
         logger.error(f"❌ Error fetching audit results: {e}", exc_info=True)
         raise HTTPException(500, f"Error fetching results: {str(e)}")
-
 # ── GET /{audit_id}/product/{product_id} ─────────────────────────────────────
 
 @router.get("/{audit_id}/product/{product_id}")
