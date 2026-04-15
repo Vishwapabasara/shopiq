@@ -1,4 +1,6 @@
+import { useQuery } from '@tanstack/react-query'
 import { useProductDetail } from '../../hooks/useAudit'
+import { authApi } from '../../lib/api'
 import { SeverityBadge, Spinner, ScoreRing } from '../ui'
 import { categoryLabel, scoreLabel, cn } from '../../lib/utils'
 
@@ -9,10 +11,14 @@ interface Props {
 }
 
 export function ProductDrawer({ auditId, productId, onClose }: Props) {
-  const { data: product, isLoading } = useProductDetail(
-    auditId,
-    productId,
-  )
+  const { data: product, isLoading } = useProductDetail(auditId, productId)
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: authApi.me })
+
+  // Derive store name from "amba-storees.myshopify.com" → "amba-storees"
+  const storeName = me?.shop_domain?.replace('.myshopify.com', '') ?? ''
+  const shopifyProductUrl = storeName && product?.shopify_product_id
+    ? `https://admin.shopify.com/store/${storeName}/products/${product.shopify_product_id}`
+    : '#'
 
   const isOpen = !!productId
 
@@ -177,7 +183,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
         {/* Footer */}
         <div className="border-t border-slate-100 px-6 py-4">
           <a
-            href={`https://${window.location.hostname.replace(/^[^.]+\./, '')}/admin/products/${product?.shopify_product_id}`}
+            href={shopifyProductUrl}
             target="_blank"
             rel="noreferrer"
             className="btn-primary w-full text-center block"

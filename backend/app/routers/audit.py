@@ -173,27 +173,35 @@ async def get_audit_status(audit_id: str, tenant: dict = Depends(get_current_ten
 async def get_audit_results(
     audit_id: str,
     tenant: dict = Depends(get_current_tenant),
-    sort: str = None,  # ✅ ADD THIS
-    limit: int = 100,  # ✅ ADD THIS
-    offset: int = 0,   # ✅ ADD THIS
+    sort: str = None,
+    severity: str = None,
+    limit: int = 100,
+    offset: int = 0,
 ):
     """Get detailed audit results with optional sorting and pagination"""
-    logger.info(f"📊 Fetching results for audit: {audit_id} (sort={sort}, limit={limit}, offset={offset})")
-    
+    logger.info(f"📊 Fetching results for audit: {audit_id} (sort={sort}, severity={severity}, limit={limit}, offset={offset})")
+
     db = await get_db()
-    
+
     try:
         audit = await aw(db.audits.find_one({
             "_id": ObjectId(audit_id),
             "tenant_id": str(tenant["_id"])
         }))
-        
+
         if not audit:
             raise HTTPException(404, "Audit not found")
-        
+
         # Get product results
         product_results = audit.get("product_results", [])
-        
+
+        # Apply severity filter
+        if severity:
+            product_results = [
+                p for p in product_results
+                if any(i.get("severity") == severity for i in p.get("issues", []))
+            ]
+
         # Apply sorting if requested
         if sort:
             if sort == "score_asc":
