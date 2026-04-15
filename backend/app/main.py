@@ -20,18 +20,19 @@ app.add_middleware(
 )
 
 # 3. ADD CORS MIDDLEWARE
+# CORS middleware
+allowed_origins = [
+    "https://shopiq-iota.vercel.app",
+    "https://shopiq-production.up.railway.app",
+]
+
+# Add FRONTEND_URL if it's set and different
+if settings.FRONTEND_URL and settings.FRONTEND_URL not in allowed_origins:
+    allowed_origins.append(settings.FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        # Local development
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        # Production frontend
-        "https://shopiq-iota.vercel.app",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
