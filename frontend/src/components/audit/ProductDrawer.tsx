@@ -87,13 +87,13 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
               </div>
 
               {/* Issues list */}
-              {product.issues.length > 0 && (
+              {(product.issues?.length ?? 0) > 0 && (
                 <div>
                   <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-                    Issues found ({product.issues.length})
+                    Issues found ({product.issues?.length ?? 0})
                   </h3>
                   <div className="space-y-2">
-                    {product.issues.map((issue, i) => (
+                    {product.issues?.map((issue, i) => (
                       <div
                         key={i}
                         className={cn(
@@ -119,7 +119,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
               )}
 
               {/* AI improvements */}
-              {product.ai_improvements.length > 0 && (
+              {(product.ai_improvements?.length ?? 0) > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -135,7 +135,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                     )}
                   </div>
                   <ul className="space-y-2">
-                    {product.ai_improvements.map((imp, i) => (
+                    {product.ai_improvements?.map((imp, i) => (
                       <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
                         <span className="mt-0.5 text-brand-500 text-xs font-bold flex-shrink-0">
                           {i + 1}.

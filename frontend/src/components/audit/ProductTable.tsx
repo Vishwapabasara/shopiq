@@ -94,9 +94,9 @@ export function ProductTable({ auditId, onSelectProduct }: Props) {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {products.map(p => {
-                  const topIssue = p.issues.find(i => i.severity === 'critical')
-                    ?? p.issues.find(i => i.severity === 'warning')
-                    ?? p.issues[0]
+                  const topIssue = p.issues?.find(i => i.severity === 'critical')
+                    ?? p.issues?.find(i => i.severity === 'warning')
+                    ?? p.issues?.[0]
 
                   return (
                     <tr
