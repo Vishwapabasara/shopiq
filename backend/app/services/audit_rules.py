@@ -70,7 +70,7 @@ def check_meta_description(product: dict) -> list[AuditIssue]:
         issues.append(AuditIssue(
             rule="missing_meta_description",
             category="seo",
-            severity=IssueSeverity.CRITICAL,
+            severity=IssueSeverity.WARNING,
             message="No meta description set for this product",
             fix_hint="Add a meta description (120–160 chars) summarising the product with keywords",
         ))

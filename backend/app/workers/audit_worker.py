@@ -183,9 +183,10 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
 
     # ── 4. Aggregate scores ──────────────────────────────────────────────────────
     overall_score, category_scores = calculate_store_score(product_results)
-    critical_count = sum(1 for p in product_results for i in p["issues"] if i["severity"] == "critical")
-    warning_count  = sum(1 for p in product_results for i in p["issues"] if i["severity"] == "warning")
-    info_count     = sum(1 for p in product_results for i in p["issues"] if i["severity"] == "info")
+    # Count products with at least one issue of each severity (not total issues)
+    critical_count = sum(1 for p in product_results if any(i.get("severity") == "critical" for i in p.get("issues", [])))
+    warning_count  = sum(1 for p in product_results if any(i.get("severity") == "warning"  for i in p.get("issues", [])))
+    info_count     = sum(1 for p in product_results if any(i.get("severity") == "info"     for i in p.get("issues", [])))
 
     logger.info(
         f"📊 Audit summary — score: {overall_score}, "
