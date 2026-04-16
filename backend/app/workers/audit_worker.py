@@ -106,6 +106,27 @@ def _score_title_50(issues: list) -> int:
     return max(0, 50 - deductions)
 
 
+# Keywords in issue messages that indicate SEO/metadata gaps rather than
+# show-stopping problems. These are downgraded to "warning" for products
+# that are otherwise functional (score >= 50).
+_SEO_KEYWORDS = ("description", "meta", "seo", "keywords", "alt text", "tag", "vendor", "type")
+
+
+def _apply_severity_override(score: int, issues: list[dict]) -> list[dict]:
+    """
+    Downgrade 'critical' → 'warning' for SEO/metadata issues on products
+    that are fundamentally functional (score ≥ 50).  Truly broken products
+    (no images, no description at all) keep their critical status regardless.
+    """
+    if score >= 50:
+        for issue in issues:
+            if issue.get("severity") == "critical":
+                msg = issue.get("message", "").lower()
+                if any(kw in msg for kw in _SEO_KEYWORDS):
+                    issue["severity"] = "warning"
+    return issues
+
+
 async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, db):
     """Run the actual audit: fetch → rules → AI → save → notify."""
 
@@ -139,12 +160,16 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
         images = product.get("images") or []
         image_url = images[0].get("src") if images else None
 
+        # Serialize issues then apply score-based severity override
+        serialized_issues = [i.model_dump() for i in issues]
+        serialized_issues = _apply_severity_override(score, serialized_issues)
+
         product_results.append({
             "shopify_product_id": str(product["id"]),
             "title": product.get("title", "Untitled"),
             "handle": product.get("handle", ""),
             "score": score,
-            "issues": [i.model_dump() for i in issues],
+            "issues": serialized_issues,
             "image_count": len(images),
             "word_count": wc,
             "has_seo_title": bool(seo.get("title")),
