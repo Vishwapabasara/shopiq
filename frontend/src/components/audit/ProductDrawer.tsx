@@ -10,15 +10,61 @@ interface Props {
   onClose: () => void
 }
 
+// Inline progress bar for score breakdown (value out of max)
+function ScoreBar({
+  label,
+  value,
+  max = 50,
+}: {
+  label: string
+  value: number
+  max?: number
+}) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0
+  const color =
+    pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-400' : 'bg-red-400'
+  const textColor =
+    pct >= 70 ? 'text-emerald-600' : pct >= 40 ? 'text-amber-500' : 'text-red-500'
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-1.5">
+        <span className="text-sm text-slate-600">{label}</span>
+        <span className={cn('text-sm font-semibold tabular-nums', textColor)}>
+          {value}/{max}
+        </span>
+      </div>
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className={cn('h-full rounded-full transition-all duration-700', color)}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+// Group issues by severity for display
+function groupBySeverity(issues: Array<{ severity: string; message: string; fix_hint?: string; rule?: string }>) {
+  const order = ['critical', 'warning', 'info'] as const
+  return order
+    .map(sev => ({
+      severity: sev,
+      items: issues.filter(i => i.severity === sev),
+    }))
+    .filter(g => g.items.length > 0)
+}
+
 export function ProductDrawer({ auditId, productId, onClose }: Props) {
   const { data: product, isLoading } = useProductDetail(auditId, productId)
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: authApi.me })
 
-  // Derive store name from "amba-storees.myshopify.com" → "amba-storees"
+  // Derive store name: "amba-storees.myshopify.com" → "amba-storees"
   const storeName = me?.shop_domain?.replace('.myshopify.com', '') ?? ''
-  const shopifyProductUrl = storeName && product?.shopify_product_id
-    ? `https://admin.shopify.com/store/${storeName}/products/${product.shopify_product_id}`
-    : '#'
+  const shopifyProductUrl =
+    storeName && product?.shopify_product_id
+      ? `https://admin.shopify.com/store/${storeName}/products/${product.shopify_product_id}`
+      : '#'
 
   const isOpen = !!productId
 
@@ -43,11 +89,20 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
       >
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-5 border-b border-slate-100">
-          <div className="flex-1 min-w-0 pr-4">
-            <h2 className="font-semibold text-slate-800 text-base truncate">
-              {product?.title ?? 'Loading…'}
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5 font-mono">{product?.handle}</p>
+          <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
+            {product?.image_url && (
+              <img
+                src={product.image_url}
+                alt={product.title}
+                className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-slate-100"
+              />
+            )}
+            <div className="min-w-0">
+              <h2 className="font-semibold text-slate-800 text-base truncate">
+                {product?.title ?? 'Loading…'}
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5 font-mono">{product?.handle}</p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -60,12 +115,14 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
           {isLoading && (
-            <div className="flex justify-center py-12"><Spinner size={28} /></div>
+            <div className="flex justify-center py-12">
+              <Spinner size={28} />
+            </div>
           )}
 
           {product && (
             <>
-              {/* Score + meta */}
+              {/* Overall score + metadata */}
               <div className="flex items-center gap-6">
                 <ScoreRing score={product.score} size={96} strokeWidth={7} />
                 <div className="space-y-1.5">
@@ -73,14 +130,24 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                   <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                     <span className="bg-slate-100 rounded px-2 py-0.5">{product.image_count} images</span>
                     <span className="bg-slate-100 rounded px-2 py-0.5">{product.word_count} words</span>
-                    <span className={cn('rounded px-2 py-0.5',
-                      product.has_seo_title ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                    )}>
+                    <span
+                      className={cn(
+                        'rounded px-2 py-0.5',
+                        product.has_seo_title
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-red-50 text-red-700'
+                      )}
+                    >
                       SEO title {product.has_seo_title ? '✓' : '✗'}
                     </span>
-                    <span className={cn('rounded px-2 py-0.5',
-                      product.has_meta_description ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                    )}>
+                    <span
+                      className={cn(
+                        'rounded px-2 py-0.5',
+                        product.has_meta_description
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-red-50 text-red-700'
+                      )}
+                    >
                       Meta desc {product.has_meta_description ? '✓' : '✗'}
                     </span>
                   </div>
@@ -92,39 +159,72 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Issues list */}
+              {/* Score breakdown */}
+              {(product.content_score !== undefined ||
+                product.visual_score !== undefined ||
+                product.title_score !== undefined) && (
+                <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                    Score breakdown
+                  </h3>
+                  {product.content_score !== undefined && (
+                    <ScoreBar label="Content Quality" value={product.content_score} max={50} />
+                  )}
+                  {product.visual_score !== undefined && (
+                    <ScoreBar label="Visual Appeal" value={product.visual_score} max={50} />
+                  )}
+                  {product.title_score !== undefined && (
+                    <ScoreBar label="Title Optimization" value={product.title_score} max={50} />
+                  )}
+                </div>
+              )}
+
+              {/* Issues grouped by severity */}
               {(product.issues?.length ?? 0) > 0 && (
                 <div>
                   <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
                     Issues found ({product.issues?.length ?? 0})
                   </h3>
-                  <div className="space-y-2">
-                    {product.issues?.map((issue, i) => (
-                      <div
-                        key={i}
-                        className={cn(
-                          'rounded-lg p-3.5 border',
-                          issue.severity === 'critical' ? 'bg-red-50 border-red-100' :
-                          issue.severity === 'warning'  ? 'bg-amber-50 border-amber-100' :
-                                                          'bg-blue-50 border-blue-100'
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm font-medium text-slate-800">{issue.message}</p>
-                          <SeverityBadge severity={issue.severity} />
+                  <div className="space-y-4">
+                    {groupBySeverity(product.issues ?? []).map(({ severity, items }) => (
+                      <div key={severity}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <SeverityBadge severity={severity} />
+                          <span className="text-xs text-slate-400">{items.length} issue{items.length !== 1 ? 's' : ''}</span>
                         </div>
-                        <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                          <span className="font-medium text-slate-700">Fix: </span>
-                          {issue.fix_hint}
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-1.5 font-mono">{issue.rule}</p>
+                        <div className="space-y-2">
+                          {items.map((issue, i) => (
+                            <div
+                              key={i}
+                              className={cn(
+                                'rounded-lg p-3.5 border',
+                                severity === 'critical'
+                                  ? 'bg-red-50 border-red-100'
+                                  : severity === 'warning'
+                                  ? 'bg-amber-50 border-amber-100'
+                                  : 'bg-blue-50 border-blue-100'
+                              )}
+                            >
+                              <p className="text-sm font-medium text-slate-800">{issue.message}</p>
+                              {issue.fix_hint && (
+                                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                                  <span className="font-medium text-slate-700">Fix: </span>
+                                  {issue.fix_hint}
+                                </p>
+                              )}
+                              {issue.rule && (
+                                <p className="text-[10px] text-slate-400 mt-1.5 font-mono">{issue.rule}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* AI improvements */}
+              {/* AI recommendations */}
               {(product.ai_improvements?.length ?? 0) > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
@@ -132,11 +232,12 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                       AI recommendations
                     </h3>
                     <span className="text-[9px] bg-brand-50 text-brand-700 border border-brand-100 px-1.5 py-0.5 rounded font-medium">
-                      GPT-4o
+                      Gemini
                     </span>
                     {product.ai_score !== null && (
                       <span className="text-xs text-slate-400 ml-auto">
-                        Content quality: <strong className="text-slate-600">{product.ai_score}/100</strong>
+                        Content quality:{' '}
+                        <strong className="text-slate-600">{product.ai_score}/100</strong>
                       </span>
                     )}
                   </div>
@@ -153,7 +254,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                 </div>
               )}
 
-              {/* AI rewrite */}
+              {/* AI rewritten description */}
               {product.ai_rewrite && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
@@ -161,7 +262,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                       AI-rewritten description
                     </h3>
                     <span className="text-[9px] bg-brand-50 text-brand-700 border border-brand-100 px-1.5 py-0.5 rounded font-medium">
-                      GPT-4o
+                      Gemini
                     </span>
                   </div>
                   <div
@@ -181,15 +282,21 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-100 px-6 py-4">
+        <div className="border-t border-slate-100 px-6 py-4 flex gap-3">
           <a
             href={shopifyProductUrl}
             target="_blank"
             rel="noreferrer"
-            className="btn-primary w-full text-center block"
+            className="btn-primary flex-1 text-center block"
           >
-            Edit in Shopify →
+            Fix in Shopify →
           </a>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            Close
+          </button>
         </div>
       </div>
     </>

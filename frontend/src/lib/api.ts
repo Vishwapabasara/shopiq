@@ -39,6 +39,12 @@ export interface ProductResult {
   word_count: number
   has_seo_title: boolean
   has_meta_description: boolean
+  // Per-product score breakdown (0–50 each)
+  content_score?: number
+  visual_score?: number
+  title_score?: number
+  // First product image thumbnail
+  image_url?: string | null
 }
 
 export interface CategoryScores {
