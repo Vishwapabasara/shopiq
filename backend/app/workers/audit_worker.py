@@ -9,6 +9,9 @@ from app.config import settings
 from app.utils.crypto import decrypt_token
 from app.utils.shopify_client import fetch_all_products
 from app.models.schemas import AuditStatus
+from app.services.audit_rules import (
+    run_rules, calculate_store_score, strip_html, word_count
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +23,7 @@ print("=" * 50)
 def get_sync_db():
     """Get synchronous MongoDB connection for Celery worker"""
     from pymongo import MongoClient
-    client = MongoClient(settings.MONGO_URI)  # ✅ FIXED: Changed from MONGODB_URL to MONGO_URI
+    client = MongoClient(settings.MONGO_URI)
     return client.get_default_database()
 
 
@@ -29,9 +32,8 @@ def run_audit_task(self: Task, audit_id: str, shop_domain: str, encrypted_token:
     """Run product audit task in Celery worker"""
     logger.info(f"🚀 Task received for audit: {audit_id}")
     logger.info(f"📦 Shop: {shop_domain}")
-    
+
     try:
-        # Update status to running (synchronous)
         db = get_sync_db()
         db.audits.update_one(
             {"_id": ObjectId(audit_id)},
@@ -41,17 +43,15 @@ def run_audit_task(self: Task, audit_id: str, shop_domain: str, encrypted_token:
             }}
         )
         logger.info(f"✅ Audit {audit_id} marked as RUNNING")
-        
-        # Decrypt access token
+
         logger.info("🔑 Decrypting access token...")
         access_token = decrypt_token(encrypted_token)
         logger.info("✅ Access token decrypted")
-        
-        # Run async audit in new event loop
+
         logger.info("🏃 Starting audit async operations...")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         try:
             result = loop.run_until_complete(
                 _run_audit_async(audit_id, shop_domain, access_token, db)
@@ -60,11 +60,10 @@ def run_audit_task(self: Task, audit_id: str, shop_domain: str, encrypted_token:
             return result
         finally:
             loop.close()
-            
+
     except Exception as exc:
         logger.error(f"❌ Audit {audit_id} failed: {exc}", exc_info=True)
-        
-        # Mark as failed (synchronous)
+
         try:
             db = get_sync_db()
             db.audits.update_one(
@@ -78,87 +77,123 @@ def run_audit_task(self: Task, audit_id: str, shop_domain: str, encrypted_token:
             logger.info(f"✅ Audit {audit_id} marked as FAILED")
         except Exception as e:
             logger.error(f"❌ Failed to mark audit as failed: {e}")
-        
+
         raise
 
 
+# Scaled-down per-category severity penalties (50-point scale)
+_HALF_PENALTY = {"critical": 10, "warning": 5, "info": 2}
+
+
+def _score_category_50(issues: list, category: str) -> int:
+    """Deduct from 50 based on issues belonging to a specific category."""
+    deductions = sum(
+        _HALF_PENALTY.get(str(i.severity.value if hasattr(i.severity, "value") else i.severity), 2)
+        for i in issues
+        if (i.category if hasattr(i, "category") else "") == category
+    )
+    return max(0, 50 - deductions)
+
+
+def _score_title_50(issues: list) -> int:
+    """Deduct from 50 based only on title-related issues."""
+    TITLE_RULES = {"title_too_short", "generic_title", "seo_title_too_short", "seo_title_too_long", "missing_seo_title"}
+    deductions = sum(
+        _HALF_PENALTY.get(str(i.severity.value if hasattr(i.severity, "value") else i.severity), 2)
+        for i in issues
+        if (i.rule if hasattr(i, "rule") else "") in TITLE_RULES
+    )
+    return max(0, 50 - deductions)
+
+
 async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, db):
-    """Run the actual audit with async operations"""
-    
-    # Fetch products from Shopify
+    """Run the actual audit: fetch → rules → AI → save → notify."""
+
+    # ── 1. Fetch products ────────────────────────────────────────────────────────
     logger.info(f"📦 Fetching products from Shopify for {shop_domain}...")
     products = await fetch_all_products(shop_domain, access_token)
     logger.info(f"✅ Fetched {len(products)} products")
-    
-    # Update progress
+
     db.audits.update_one(
         {"_id": ObjectId(audit_id)},
         {"$set": {"products_scanned": len(products)}}
     )
-    
-    # Simple audit results
-    logger.info(f"⚙️ Running simple audit on {len(products)} products...")
-    
+
+    # ── 2. Deterministic rules engine ────────────────────────────────────────────
+    logger.info(f"⚙️ Running rules engine on {len(products)} products...")
+    description_hashes: set = set()
     product_results = []
-    total_description_score = 0
-    total_image_score = 0
-    total_title_score = 0
-    
+
     for product in products:
-        # Simple scoring logic
-        score = 50  # Base score
-        issues = []
-        
-        # Individual component scores
-        description_score = 50
-        image_score = 50
-        title_score = 50
-        
-        # Check for basic issues
-        if not product.get('body_html'):
-            issues.append({"severity": "warning", "message": "Missing description"})
-            score -= 10
-            description_score = 0
-        
-        if not product.get('images'):
-            issues.append({"severity": "critical", "message": "Missing images"})
-            score -= 20
-            image_score = 0
-        
-        if len(product.get('title', '')) < 10:
-            issues.append({"severity": "warning", "message": "Title too short"})
-            score -= 5
-            title_score = 30
-        
-        # Accumulate category scores
-        total_description_score += description_score
-        total_image_score += image_score
-        total_title_score += title_score
-        
+        issues, score = run_rules(product, description_hashes)
+
+        # Per-product breakdown scores (0–50 each)
+        content_score = _score_category_50(issues, "content")
+        visual_score  = _score_category_50(issues, "ux")
+        title_score   = _score_title_50(issues)
+
+        # Metadata snapshot
+        body_text = strip_html(product.get("body_html") or "")
+        wc = word_count(body_text)
+        seo = product.get("seo") or {}
+        images = product.get("images") or []
+        image_url = images[0].get("src") if images else None
+
         product_results.append({
-            "shopify_product_id": str(product['id']),
-            "title": product.get('title', 'Untitled'),
-            "score": max(0, score),
-            "issues": issues
+            "shopify_product_id": str(product["id"]),
+            "title": product.get("title", "Untitled"),
+            "handle": product.get("handle", ""),
+            "score": score,
+            "issues": [i.model_dump() for i in issues],
+            "image_count": len(images),
+            "word_count": wc,
+            "has_seo_title": bool(seo.get("title")),
+            "has_meta_description": bool(seo.get("description")),
+            "image_url": image_url,
+            # Per-category breakdown (0–50 scale)
+            "content_score": content_score,
+            "visual_score": visual_score,
+            "title_score": title_score,
+            # AI fields populated in step 3
+            "ai_score": None,
+            "ai_improvements": [],
+            "ai_rewrite": None,
+            "ai_verdict": None,
         })
-    
-    # Calculate overall scores
-    num_products = len(product_results)
-    overall_score = sum(p['score'] for p in product_results) / num_products if num_products else 0
-    critical_count = sum(1 for p in product_results for i in p['issues'] if i['severity'] == 'critical')
-    warning_count = sum(1 for p in product_results for i in p['issues'] if i['severity'] == 'warning')
-    
-    # Calculate category scores
-    category_scores = {
-        "Content Quality": round(total_description_score / num_products, 1) if num_products else 0,
-        "Visual Appeal": round(total_image_score / num_products, 1) if num_products else 0,
-        "Title Optimization": round(total_title_score / num_products, 1) if num_products else 0,
-    }
-    
-    logger.info(f"✅ Audit completed: {len(products)} products, score: {overall_score:.1f}")
-    
-    # Save results to database
-    logger.info(f"💾 Saving audit results to database...")
+
+    logger.info(f"✅ Rules engine complete — {len(product_results)} products scored")
+
+    # ── 3. AI scoring with Gemini ────────────────────────────────────────────────
+    logger.info(f"🤖 Running Gemini AI scoring on {len(products)} products...")
+    try:
+        from app.services.ai_scorer import score_products_batch
+        ai_results = await score_products_batch(products)
+
+        for pr in product_results:
+            ai = ai_results.get(pr["shopify_product_id"])
+            if ai:
+                pr["ai_score"]        = ai.get("content_score")
+                pr["ai_improvements"] = ai.get("improvements", [])
+                pr["ai_rewrite"]      = ai.get("rewritten_description", "")
+                pr["ai_verdict"]      = ai.get("one_line_verdict", "")
+
+        logger.info(f"✅ AI scoring complete — {len(ai_results)} products scored")
+    except Exception as e:
+        logger.error(f"❌ AI scoring failed (continuing with deterministic scores): {e}", exc_info=True)
+
+    # ── 4. Aggregate scores ──────────────────────────────────────────────────────
+    overall_score, category_scores = calculate_store_score(product_results)
+    critical_count = sum(1 for p in product_results for i in p["issues"] if i["severity"] == "critical")
+    warning_count  = sum(1 for p in product_results for i in p["issues"] if i["severity"] == "warning")
+    info_count     = sum(1 for p in product_results for i in p["issues"] if i["severity"] == "info")
+
+    logger.info(
+        f"📊 Audit summary — score: {overall_score}, "
+        f"critical: {critical_count}, warning: {warning_count}, info: {info_count}"
+    )
+
+    # ── 5. Save to database ──────────────────────────────────────────────────────
+    logger.info("💾 Saving audit results to database...")
     db.audits.update_one(
         {"_id": ObjectId(audit_id)},
         {"$set": {
@@ -166,21 +201,39 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
             "products_scanned": len(products),
             "product_results": product_results,
             "overall_score": overall_score,
-            "category_scores": category_scores,  # ✅ ADD THIS
+            "category_scores": category_scores,
             "critical_count": critical_count,
             "warning_count": warning_count,
-            "info_count": 0,
+            "info_count": info_count,
             "completed_at": datetime.utcnow()
         }}
     )
-    
     logger.info(f"✅ Audit {audit_id} results saved")
-    
+
+    # ── 6. Email notification ────────────────────────────────────────────────────
+    try:
+        tenant = db.tenants.find_one({"shop_domain": shop_domain})
+        if tenant and tenant.get("shop_email"):
+            from app.services.email import send_audit_complete_email
+            send_audit_complete_email(
+                shop_domain=shop_domain,
+                shop_email=tenant["shop_email"],
+                audit_id=audit_id,
+                overall_score=float(overall_score),
+                critical_count=critical_count,
+                warning_count=warning_count,
+            )
+        else:
+            logger.info(f"ℹ️ No shop email found for {shop_domain} — skipping notification")
+    except Exception as e:
+        logger.error(f"❌ Email notification failed (audit still complete): {e}")
+
     return {
         "audit_id": audit_id,
         "products_scanned": len(products),
-        "overall_score": overall_score
+        "overall_score": overall_score,
     }
+
 
 @celery_app.task(name='app.workers.audit_worker.run_scheduled_audits')
 def run_scheduled_audits():
