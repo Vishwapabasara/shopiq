@@ -5,6 +5,7 @@ import { Sidebar } from './components/layout/Sidebar'
 import { AuditPage } from './pages/AuditPage'
 import { LoginPage } from './pages/LoginPage'
 import { ComingSoonPage } from './pages/ComingSoonPage'
+import { PlansPage } from './pages/PlansPage'
 import { Spinner } from './components/ui'
 import { AuthCallback } from './pages/AuthCallback'
 
@@ -58,6 +59,9 @@ export default function App() {
 
         {/* ✅ Protected routes - auth required */}
         <Route element={<AuthGuard />}>
+          {/* Plans page — full screen, no sidebar */}
+          <Route path="/plans" element={<PlansPage />} />
+
           <Route element={<DashboardShell />}>
             <Route path="/dashboard" element={<AuditPage />} />
 

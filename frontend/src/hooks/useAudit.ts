@@ -73,10 +73,26 @@ export interface ScopeErrorData {
   action: 'reinstall'
 }
 
+export interface UpgradeErrorData {
+  reason: string
+  message: string
+}
+
 function extractScopeError(err: unknown): ScopeErrorData | null {
   const data = (err as any)?.response?.data
   if ((err as any)?.response?.status === 403 && data?.error === 'missing_scopes') {
     return data as ScopeErrorData
+  }
+  return null
+}
+
+function extractUpgradeError(err: unknown): UpgradeErrorData | null {
+  if ((err as any)?.response?.status === 402) {
+    const detail = (err as any)?.response?.data?.detail
+    return {
+      reason: detail?.error ?? 'limit_exceeded',
+      message: detail?.message ?? 'You have reached your plan limit. Upgrade to continue.',
+    }
   }
   return null
 }
@@ -89,6 +105,7 @@ export function useActiveAudit() {
     localStorage.getItem('shopiq_active_audit')
   )
   const [scopeError, setScopeError] = useState<ScopeErrorData | null>(null)
+  const [upgradeError, setUpgradeError] = useState<UpgradeErrorData | null>(null)
 
   const trigger = useTriggerAudit()
   const status = useAuditStatus(activeAuditId)
@@ -117,6 +134,7 @@ export function useActiveAudit() {
   // ── Start a brand new audit ───────────────────────────────────────────────
   const startAudit = useCallback(async () => {
     setScopeError(null)
+    setUpgradeError(null)
     setActiveAuditId(null)
     localStorage.removeItem('shopiq_active_audit')
 
@@ -127,8 +145,10 @@ export function useActiveAudit() {
       localStorage.setItem('shopiq_active_audit', id)
     } catch (err) {
       const se = extractScopeError(err)
+      const ue = extractUpgradeError(err)
       if (se) setScopeError(se)
-      // non-scope errors: trigger.error is set — AuditPage renders the error banner
+      else if (ue) setUpgradeError(ue)
+      // other errors: trigger.error is set — AuditPage renders the error banner
     }
   }, [trigger])
 
@@ -140,9 +160,11 @@ export function useActiveAudit() {
     setActiveAuditId,
     startAudit,
     isTriggering: trigger.isPending,
-    triggerError: scopeError ? null : trigger.error,  // suppress generic error when showing modal
+    triggerError: scopeError || upgradeError ? null : trigger.error,
     scopeError,
     clearScopeError: () => setScopeError(null),
+    upgradeError,
+    clearUpgradeError: () => setUpgradeError(null),
     statusData: status.data,
     isPolling: status.isFetching,
     isRunning,

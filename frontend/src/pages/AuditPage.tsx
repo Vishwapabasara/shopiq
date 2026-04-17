@@ -7,6 +7,8 @@ import { ProductDrawer } from '../components/audit/ProductDrawer'
 import { AuditProgress } from '../components/audit/AuditProgress'
 import { ScoreHistory } from '../components/audit/ScoreHistory'
 import { ScopeErrorModal } from '../components/audit/ScopeErrorModal'
+import { UsageMeter } from '../components/UsageMeter'
+import { UpgradeModal } from '../components/UpgradeModal'
 import { EmptyState, Spinner } from '../components/ui'
 import { formatDate, formatTime } from '../lib/utils'
 import { authApi } from '../lib/api'
@@ -19,6 +21,8 @@ export function AuditPage() {
     triggerError,
     scopeError,
     clearScopeError,
+    upgradeError,
+    clearUpgradeError,
     statusData,
     isRunning,
   } = useActiveAudit()
@@ -67,6 +71,15 @@ export function AuditPage() {
         />
       )}
 
+      {/* Upgrade modal */}
+      {upgradeError && (
+        <UpgradeModal
+          reason={upgradeError.reason}
+          message={upgradeError.message}
+          onClose={clearUpgradeError}
+        />
+      )}
+
       {/* Top bar */}
       <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div>
@@ -92,6 +105,7 @@ export function AuditPage() {
 
       {/* Main content */}
       <div className="flex-1 px-8 py-6 space-y-5 max-w-6xl">
+        <UsageMeter />
 
         {/* Error state */}
         {triggerError && (
