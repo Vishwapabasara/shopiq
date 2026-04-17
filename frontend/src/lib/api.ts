@@ -92,6 +92,8 @@ export interface AuthMe {
   shop_name?: string
   plan?: string
   modules_enabled?: string[]
+  scope_issue?: boolean
+  missing_scopes?: string[]
 }
 
 // ── API calls ─────────────────────────────────────────────────────────────────

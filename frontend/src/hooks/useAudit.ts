@@ -64,6 +64,23 @@ export function useAuditHistory() {
   })
 }
 
+// ── Scope error type ──────────────────────────────────────────────────────────
+
+export interface ScopeErrorData {
+  error: 'missing_scopes'
+  message: string
+  missing_scopes: string[]
+  action: 'reinstall'
+}
+
+function extractScopeError(err: unknown): ScopeErrorData | null {
+  const data = (err as any)?.response?.data
+  if ((err as any)?.response?.status === 403 && data?.error === 'missing_scopes') {
+    return data as ScopeErrorData
+  }
+  return null
+}
+
 // ── Composed hook: manage active audit flow ───────────────────────────────────
 
 export function useActiveAudit() {
@@ -71,6 +88,7 @@ export function useActiveAudit() {
   const [activeAuditId, setActiveAuditId] = useState<string | null>(() =>
     localStorage.getItem('shopiq_active_audit')
   )
+  const [scopeError, setScopeError] = useState<ScopeErrorData | null>(null)
 
   const trigger = useTriggerAudit()
   const status = useAuditStatus(activeAuditId)
@@ -98,7 +116,7 @@ export function useActiveAudit() {
 
   // ── Start a brand new audit ───────────────────────────────────────────────
   const startAudit = useCallback(async () => {
-    // Clear previous audit first so UI resets immediately
+    setScopeError(null)
     setActiveAuditId(null)
     localStorage.removeItem('shopiq_active_audit')
 
@@ -107,8 +125,10 @@ export function useActiveAudit() {
       const id = result.audit_id
       setActiveAuditId(id)
       localStorage.setItem('shopiq_active_audit', id)
-    } catch {
-      // trigger.error will be set — AuditPage renders the error banner
+    } catch (err) {
+      const se = extractScopeError(err)
+      if (se) setScopeError(se)
+      // non-scope errors: trigger.error is set — AuditPage renders the error banner
     }
   }, [trigger])
 
@@ -120,7 +140,9 @@ export function useActiveAudit() {
     setActiveAuditId,
     startAudit,
     isTriggering: trigger.isPending,
-    triggerError: trigger.error,
+    triggerError: scopeError ? null : trigger.error,  // suppress generic error when showing modal
+    scopeError,
+    clearScopeError: () => setScopeError(null),
     statusData: status.data,
     isPolling: status.isFetching,
     isRunning,

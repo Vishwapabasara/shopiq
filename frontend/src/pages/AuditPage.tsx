@@ -1,12 +1,15 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useActiveAudit, useAuditResults } from '../hooks/useAudit'
 import { ScoreOverview } from '../components/audit/ScoreOverview'
 import { ProductTable } from '../components/audit/ProductTable'
 import { ProductDrawer } from '../components/audit/ProductDrawer'
 import { AuditProgress } from '../components/audit/AuditProgress'
 import { ScoreHistory } from '../components/audit/ScoreHistory'
+import { ScopeErrorModal } from '../components/audit/ScopeErrorModal'
 import { EmptyState, Spinner } from '../components/ui'
 import { formatDate, formatTime } from '../lib/utils'
+import { authApi } from '../lib/api'
 
 export function AuditPage() {
   const {
@@ -14,10 +17,13 @@ export function AuditPage() {
     startAudit,
     isTriggering,
     triggerError,
+    scopeError,
+    clearScopeError,
     statusData,
-    isRunning,        // ← from hook now
+    isRunning,
   } = useActiveAudit()
 
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: authApi.me })
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
 
   const isComplete = statusData?.status === 'complete'
@@ -28,8 +34,39 @@ export function AuditPage() {
     isComplete ? activeAuditId : null
   )
 
+  const reinstallUrl = me?.shop_domain
+    ? `${import.meta.env.VITE_API_URL || 'https://shopiq-production.up.railway.app'}/auth/shopify/install?shop=${me.shop_domain}`
+    : '#'
+
   return (
     <div className="flex-1 flex flex-col min-h-screen">
+      {/* Scope warning banner */}
+      {me?.scope_issue && (me?.missing_scopes?.length ?? 0) > 0 && (
+        <div className="bg-amber-50 border-b border-amber-200 px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            <span>⚠️</span>
+            <span>
+              ShopIQ is missing some permissions — audits may fail until you update them.
+            </span>
+          </div>
+          <a
+            href={reinstallUrl}
+            className="text-sm font-medium text-amber-700 underline underline-offset-2 hover:text-amber-900 flex-shrink-0 ml-4"
+          >
+            Update permissions
+          </a>
+        </div>
+      )}
+
+      {/* Scope error modal */}
+      {scopeError && me?.shop_domain && (
+        <ScopeErrorModal
+          missingScopes={scopeError.missing_scopes}
+          shopDomain={me.shop_domain}
+          onClose={clearScopeError}
+        />
+      )}
+
       {/* Top bar */}
       <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div>
