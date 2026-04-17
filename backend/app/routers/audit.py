@@ -9,6 +9,7 @@ from app.dependencies import get_db, get_current_tenant
 from app.models.schemas import AuditRunResponse, AuditStatusResponse, AuditStatus
 from app.workers.audit_worker import run_audit_task
 from app.utils.shopify_client import validate_scopes
+from app.services.billing import check_usage_limits, increment_usage
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 logger = logging.getLogger(__name__)
@@ -56,6 +57,21 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
         {"$unset": {"scope_issue": "", "missing_scopes": ""}}
     ))
 
+    # Check usage limits before queuing
+    usage_check = await check_usage_limits(tenant)
+    if not usage_check["allowed"]:
+        logger.warning(f"⚠️ Usage limit exceeded for {tenant['shop_domain']}: {usage_check['reason']}")
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error": usage_check["reason"],
+                "message": usage_check["message"],
+                "limits": usage_check["limits"],
+                "usage": usage_check["usage"],
+                "action": "upgrade",
+            }
+        )
+
     from app.workers.celery_app import celery_app
     logger.info(f"📡 Celery broker: {celery_app.conf.broker_url}")
 
@@ -95,6 +111,9 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
             {"_id": result.inserted_id},
             {"$set": {"celery_task_id": task.id}}
         ))
+
+        # Increment audit usage counter
+        await increment_usage(tenant["_id"], audits=1)
 
         return AuditRunResponse(
             audit_id=audit_id,

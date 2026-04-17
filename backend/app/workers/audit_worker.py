@@ -236,6 +236,18 @@ async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, d
     )
     logger.info(f"✅ Audit {audit_id} results saved")
 
+    # ── 5b. Update products scanned usage ────────────────────────────────────────
+    try:
+        tenant = db.tenants.find_one({"shop_domain": shop_domain})
+        if tenant:
+            db.tenants.update_one(
+                {"_id": tenant["_id"]},
+                {"$inc": {"usage.products_scanned_this_month": len(products)}}
+            )
+            logger.info(f"✅ Usage updated: {len(products)} products scanned for {shop_domain}")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to update product usage: {e}")
+
     # ── 6. Email notification ────────────────────────────────────────────────────
     try:
         tenant = db.tenants.find_one({"shop_domain": shop_domain})

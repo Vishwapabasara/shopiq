@@ -61,3 +61,53 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+PLANS = {
+    "free": {
+        "name": "Free",
+        "price": 0,
+        "audits_per_month": 6,
+        "max_products": 50,
+        "features": [
+            "6 audits per month",
+            "Up to 50 products",
+            "Basic scoring",
+            "Email support"
+        ]
+    },
+    "pro": {
+        "name": "Professional",
+        "price": 29.00,
+        "interval": "EVERY_30_DAYS",
+        "audits_per_month": 50,
+        "max_products": 1000,
+        "trial_days": 7,
+        "features": [
+            "50 audits per month",
+            "Up to 1,000 products",
+            "AI-powered scoring",
+            "Email notifications",
+            "Scheduled audits",
+            "Priority support",
+            "Product detail analysis"
+        ]
+    },
+    "enterprise": {
+        "name": "Enterprise",
+        "price": 99.00,
+        "interval": "EVERY_30_DAYS",
+        "audits_per_month": -1,
+        "max_products": -1,
+        "trial_days": 14,
+        "features": [
+            "Unlimited audits",
+            "Unlimited products",
+            "AI-powered scoring",
+            "Scheduled audits (weekly/daily)",
+            "White-label PDF reports",
+            "API access",
+            "Dedicated support",
+            "Custom integrations"
+        ]
+    }
+}

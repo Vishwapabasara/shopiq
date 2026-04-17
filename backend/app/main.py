@@ -50,9 +50,10 @@ logger = logging.getLogger(__name__)
 logger.info("🚀 ShopIQ starting up...")
 
 # 5. INCLUDE ROUTERS
-from app.routers import auth, audit
+from app.routers import auth, audit, billing
 app.include_router(auth.router)
 app.include_router(audit.router)
+app.include_router(billing.router)
 
 if settings.DEV_MODE:
     from app.dev.dev_router import router as dev_router
