@@ -13,8 +13,8 @@ app = FastAPI(title="ShopIQ API", version="1.0.0")
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SESSION_SECRET,
-    max_age=86400,
-    same_site="none",  
+    max_age=86400 * 30,
+    same_site="none",
     https_only=True,
     session_cookie="shopiq_session",
 )
@@ -24,6 +24,7 @@ app.add_middleware(
 allowed_origins = [
     "https://shopiq-iota.vercel.app",
     "https://shopiq-production.up.railway.app",
+    "https://admin.shopify.com",
 ]
 
 # Add FRONTEND_URL if it's set and different
@@ -60,22 +61,32 @@ if settings.DEV_MODE:
 # 6. DEFINE ROUTES
 
 @app.get("/", response_class=HTMLResponse)
-async def root(shop: str = None, embedded: str = None, host: str = None):
+async def root(request: Request, shop: str = None, embedded: str = None, host: str = None):
     """
     Root endpoint - handles Shopify embedded app and landing page
     """
-    logger.info(f"🏠 Root accessed - shop: {shop}, embedded: {embedded}")
-    
+    logger.info(f"🏠 Root accessed - shop: {shop}, embedded: {embedded}, host: {host}")
+    logger.info(f"🍪 Session data: {dict(request.session) if hasattr(request, 'session') else 'No session'}")
+
     # Shopify embedded app access
     if shop and embedded == "1":
         from app.dependencies import get_db
-        from app.routers.auth import aw
-        
+        from app.services.session_manager import get_session_by_shop
+
         db = await get_db()
-        tenant = await aw(db.tenants.find_one({"shop_domain": shop}))
-        
-        if tenant:
-            # Shop is installed - redirect to frontend using App Bridge
+
+        # Check if shop has an active session
+        session = await get_session_by_shop(shop)
+
+        if session:
+            # Shop is authenticated - load app
+            logger.info(f"✅ Shop {shop} has active session, loading app")
+
+            # Restore session to request cookie
+            request.session["session_id"] = session["session_id"]
+            request.session["shop_domain"] = session["shop_domain"]
+            request.session["tenant_id"] = session["tenant_id"]
+
             return HTMLResponse(content=f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -92,32 +103,37 @@ async def root(shop: str = None, embedded: str = None, host: str = None):
             <p>Please wait...</p>
         </div>
     </div>
-    
+
     <script>
         const shop = '{shop}';
         const host = '{host or ""}';
-        
+        const sessionId = '{session["session_id"]}';
+
+        // Store session in localStorage for persistence
+        localStorage.setItem('shopiq_session', sessionId);
+        localStorage.setItem('shopiq_shop', shop);
+
         const AppBridge = window['app-bridge'];
         const createApp = AppBridge.default;
         const Redirect = AppBridge.actions.Redirect;
-        
+
         const app = createApp({{
             apiKey: '{settings.SHOPIFY_API_KEY}',
             host: host || btoa(shop + '/admin'),
         }});
-        
+
         const redirect = Redirect.create(app);
         redirect.dispatch(Redirect.Action.REMOTE, {{
-            url: 'https://shopiq-iota.vercel.app/dashboard?shop=' + shop,
-            newContext: true
+            url: '{settings.FRONTEND_URL}/dashboard?shop=' + shop + '&session=' + sessionId,
+            newContext: false
         }});
     </script>
 </body>
 </html>
             """)
         else:
-            # Shop not installed - start OAuth flow
-            logger.info(f"⚠️ Shop {shop} not installed, redirecting to OAuth")
+            # Shop not authenticated - start OAuth flow
+            logger.info(f"⚠️ Shop {shop} not authenticated, redirecting to OAuth")
             return HTMLResponse(content=f"""
 <!DOCTYPE html>
 <html lang="en">

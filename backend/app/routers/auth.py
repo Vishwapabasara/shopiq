@@ -15,6 +15,7 @@ from app.config import settings
 from app.dependencies import get_db
 from app.utils.crypto import encrypt_token
 from app.utils.shopify_client import get_shop_info
+from app.services.session_manager import create_session as create_db_session, get_session, delete_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -157,11 +158,28 @@ async def callback(
     ))
     logger.info(f"✅ Tenant record updated in database")
 
-    request.session["shop"] = shop
+    # Get tenant_id for session creation
+    tenant_doc = await aw(db.tenants.find_one({"shop_domain": shop}, {"_id": 1}))
+    tenant_id = str(tenant_doc["_id"])
+
+    # Create database-backed session
+    session_id = await create_db_session(
+        shop_domain=shop,
+        tenant_id=tenant_id,
+        duration_days=30
+    )
+
+    # Store session in cookie
+    request.session["session_id"] = session_id
+    request.session["shop_domain"] = shop
+    request.session["tenant_id"] = tenant_id
+
+    logger.info(f"✅ Session created and stored in cookie: {session_id}")
     logger.info(f"✅ OAuth flow completed for {shop}")
 
-    frontend_url = f"{settings.FRONTEND_URL}/auth/callback?shop={shop}&success=true"
-    return RedirectResponse(url=frontend_url, status_code=302)
+    redirect_url = f"{settings.FRONTEND_URL}/auth/callback?shop={shop}&session={session_id}"
+    logger.info(f"🔄 Redirecting to: {redirect_url}")
+    return RedirectResponse(url=redirect_url, status_code=302)
 
 # ── GET /me ───────────────────────────────────────────────────────────────────
 
@@ -201,7 +219,7 @@ async def me(request: Request):
 # ── POST /session ─────────────────────────────────────────────────────────────
 
 @router.post("/session")
-async def create_session(request: Request, shop: str = Query(...)):
+async def create_session_endpoint(request: Request, shop: str = Query(...)):
     logger.info(f"📝 Session creation requested for: {shop}")
 
     if not _valid_shop(shop):
@@ -213,18 +231,27 @@ async def create_session(request: Request, shop: str = Query(...)):
     if not tenant:
         raise HTTPException(404, "Shop not found - please install the app first")
 
-    request.session["shop"] = shop
-    logger.info(f"✅ Session created for {shop}")
+    tenant_id = str(tenant["_id"])
+    session_id = await create_db_session(shop_domain=shop, tenant_id=tenant_id, duration_days=30)
 
-    return {"success": True, "shop": shop, "authenticated": True}
+    request.session["session_id"] = session_id
+    request.session["shop_domain"] = shop
+    request.session["tenant_id"] = tenant_id
+    logger.info(f"✅ Session created for {shop}: {session_id}")
+
+    return {"success": True, "shop": shop, "session_id": session_id, "authenticated": True}
 
 
-# ── POST /logout (once only) ──────────────────────────────────────────────────
+# ── POST /logout ──────────────────────────────────────────────────────────────
 
 @router.post("/logout")
 async def logout(request: Request):
-    shop = request.session.get("shop", "unknown")
-    logger.info(f"👋 Logout for shop: {shop}")
+    session_id = request.session.get("session_id")
+
+    if session_id:
+        await delete_session(session_id)
+        logger.info(f"✅ Session deleted: {session_id}")
+
     request.session.clear()
     return {"success": True, "message": "Logged out successfully"}
 
