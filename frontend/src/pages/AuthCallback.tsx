@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { api } from '../lib/api'  // ← use axios instance, not fetch
+import { saveSession } from '../utils/api'
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams()
@@ -14,33 +14,25 @@ export function AuthCallback() {
     called.current = true
 
     const shop = searchParams.get('shop')
-    const success = searchParams.get('success')
+    const session = searchParams.get('session')
 
-    console.log('🔙 OAuth callback received', { shop, success })
+    console.log('🔙 OAuth callback received', { shop, session })
 
     if (!shop) {
       setError('Missing shop parameter')
       return
     }
 
-    if (success !== 'true') {
-      setError('OAuth authentication failed')
+    if (!session) {
+      setError('Missing session parameter')
       return
     }
 
-    setStatus('Creating session...')
-
-    // Use axios api instance — same withCredentials config as /auth/me
-    api.post(`/auth/session?shop=${shop}`)
-      .then(res => {
-        console.log('✅ Session created:', res.data)
-        setStatus('Redirecting to dashboard...')
-        setTimeout(() => navigate('/dashboard'), 500)
-      })
-      .catch(err => {
-        console.error('❌ Session creation error:', err)
-        setError(`Failed to create session: ${err.response?.data?.detail ?? err.message}`)
-      })
+    setStatus('Saving session...')
+    saveSession(session, shop)
+    console.log('✅ Session saved, redirecting to dashboard')
+    setStatus('Redirecting to dashboard...')
+    setTimeout(() => navigate('/dashboard'), 500)
   }, [])  // ← empty deps, ref handles dedup
 
   if (error) {
