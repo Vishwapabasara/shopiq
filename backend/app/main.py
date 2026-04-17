@@ -248,7 +248,7 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
                 return;
             }
             
-            if (!/^[a-zA-Z0-9][a-zA-Z0-9\-]*$/.test(shop)) {
+            if (!/^[a-zA-Z0-9][a-zA-Z0-9\\-]*$/.test(shop)) {
                 errorDiv.textContent = 'Invalid shop name. Use only letters, numbers, and hyphens.';
                 return;
             }

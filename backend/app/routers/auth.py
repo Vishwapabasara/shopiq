@@ -184,36 +184,33 @@ async def callback(
 # ── GET /me ───────────────────────────────────────────────────────────────────
 
 @router.get("/me")
-async def me(request: Request):
-    shop = request.session.get("shop")
+async def get_current_user(request: Request):
+    """Get current authenticated user info"""
+    from app.dependencies import get_current_tenant
 
-    if not shop:
-        return JSONResponse(
-            status_code=401,
-            content={"authenticated": False, "error": "No active session"}
-        )
+    logger.info("🔍 /auth/me called")
+    logger.info(f"🍪 Cookies: {dict(request.cookies)}")
+    logger.info(f"📝 Session data: {dict(request.session) if hasattr(request, 'session') else 'No session'}")
+    logger.info(f"🔗 Query params: {dict(request.query_params)}")
 
-    db = await get_db()
-    tenant = await aw(db.tenants.find_one(
-        {"shop_domain": shop},
-        {"access_token": 0}
-    ))
+    try:
+        tenant = await get_current_tenant(request)
 
-    if not tenant:
-        return JSONResponse(
-            status_code=404,
-            content={"authenticated": False, "error": "Shop not found"}
-        )
+        logger.info(f"✅ /auth/me authenticated: {tenant['shop_domain']}")
 
-    return {
-        "authenticated": True,
-        "shop_domain": tenant["shop_domain"],
-        "shop_name": tenant.get("shop_name", shop),
-        "shop_email": tenant.get("shop_email", ""),
-        "plan": tenant.get("plan", "starter"),
-        "modules_enabled": tenant.get("modules_enabled", ["audit"]),
-        "installed_at": tenant.get("installed_at").isoformat() if tenant.get("installed_at") else None,
-    }
+        return {
+            "authenticated": True,
+            "shop_domain": tenant["shop_domain"],
+            "shop_name": tenant.get("shop_name", tenant["shop_domain"]),
+            "plan": tenant.get("plan", "starter"),
+            "email": tenant.get("shop_email", ""),
+        }
+    except HTTPException as e:
+        logger.error(f"❌ /auth/me authentication failed: {e.detail}")
+        raise
+    except Exception as e:
+        logger.error(f"❌ /auth/me unexpected error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
 
 # ── POST /session ─────────────────────────────────────────────────────────────
