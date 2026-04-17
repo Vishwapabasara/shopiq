@@ -204,6 +204,8 @@ async def get_current_user(request: Request):
             "shop_name": tenant.get("shop_name", tenant["shop_domain"]),
             "plan": tenant.get("plan", "starter"),
             "email": tenant.get("shop_email", ""),
+            "scope_issue": tenant.get("scope_issue", False),
+            "missing_scopes": tenant.get("missing_scopes", []),
         }
     except HTTPException as e:
         logger.error(f"❌ /auth/me authentication failed: {e.detail}")

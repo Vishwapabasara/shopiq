@@ -7,6 +7,32 @@ import httpx
 from typing import AsyncGenerator
 
 SHOPIFY_API_VERSION = "2024-01"
+REQUIRED_SCOPES = ["read_products"]
+
+
+class ScopeError(Exception):
+    """Raised when the Shopify access token is missing required OAuth scopes."""
+    def __init__(self, message: str, missing_scopes: list[str]):
+        super().__init__(message)
+        self.missing_scopes = missing_scopes
+
+
+async def validate_scopes(shop: str, access_token: str) -> list[str]:
+    """
+    Query Shopify's access_scopes endpoint to find missing required scopes.
+    Returns a list of missing scope handles (empty list means all OK).
+    Returns [] on network/API errors to avoid blocking legitimate requests.
+    """
+    url = f"https://{shop}/admin/api/{SHOPIFY_API_VERSION}/access_scopes.json"
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, headers=shopify_headers(access_token))
+            if response.status_code != 200:
+                return []
+            granted = {s["handle"] for s in response.json().get("access_scopes", [])}
+            return [s for s in REQUIRED_SCOPES if s not in granted]
+    except Exception:
+        return []
 
 
 def shopify_headers(access_token: str) -> dict:
@@ -31,7 +57,15 @@ async def fetch_all_products(shop: str, access_token: str) -> list[dict]:
     Fetch every active product from the store.
     Follows Shopify cursor pagination automatically.
     Returns raw product dicts as returned by the REST API.
+    Raises ScopeError if required scopes are missing.
     """
+    missing = await validate_scopes(shop, access_token)
+    if missing:
+        raise ScopeError(
+            message=f"Missing required Shopify permissions: {', '.join(missing)}",
+            missing_scopes=missing,
+        )
+
     products: list[dict] = []
     url = f"https://{shop}/admin/api/{SHOPIFY_API_VERSION}/products.json"
     params = {

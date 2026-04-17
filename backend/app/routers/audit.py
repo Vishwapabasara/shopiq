@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from bson import ObjectId
 import inspect
 import logging
@@ -7,6 +8,7 @@ import logging
 from app.dependencies import get_db, get_current_tenant
 from app.models.schemas import AuditRunResponse, AuditStatusResponse, AuditStatus
 from app.workers.audit_worker import run_audit_task
+from app.utils.shopify_client import validate_scopes
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 logger = logging.getLogger(__name__)
@@ -31,10 +33,31 @@ async def _to_list(cursor, length=1000):
 async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
     logger.info(f"🔍 Audit triggered for shop: {tenant.get('shop_domain')}")
 
+    db = await get_db()
+
+    # Pre-flight scope check
+    missing = await validate_scopes(tenant["shop_domain"], tenant["_token"])
+    if missing:
+        logger.warning(f"⚠️ Missing scopes for {tenant['shop_domain']}: {missing}")
+        await aw(db.tenants.update_one(
+            {"_id": tenant["_id"]},
+            {"$set": {"scope_issue": True, "missing_scopes": missing}}
+        ))
+        return JSONResponse(status_code=403, content={
+            "error": "missing_scopes",
+            "message": "App permissions need updating. Please reinstall to grant the required permissions.",
+            "missing_scopes": missing,
+            "action": "reinstall",
+        })
+
+    # Clear any previously flagged scope issue
+    await aw(db.tenants.update_one(
+        {"_id": tenant["_id"]},
+        {"$unset": {"scope_issue": "", "missing_scopes": ""}}
+    ))
+
     from app.workers.celery_app import celery_app
     logger.info(f"📡 Celery broker: {celery_app.conf.broker_url}")
-
-    db = await get_db()
 
     running = await aw(db.audits.find_one({
         "tenant_id": str(tenant["_id"]),
