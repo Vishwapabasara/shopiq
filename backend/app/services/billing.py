@@ -121,7 +121,16 @@ async def check_usage_limits(tenant: Dict) -> Dict:
     plan = PLANS.get(plan_type)
 
     if not plan:
-        return {"allowed": False, "reason": "Invalid plan"}
+        logger.warning(f"Invalid or missing plan '{plan_type}' for tenant, defaulting to free")
+        plan = PLANS.get("free")
+        if not plan:
+            return {
+                "allowed": False,
+                "reason": "Invalid plan",
+                "message": "Invalid plan configuration. Please contact support.",
+                "limits": {},
+                "usage": {},
+            }
 
     usage = tenant.get("usage", {})
     audits_used = usage.get("audits_used_this_month", 0)

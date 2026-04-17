@@ -5,7 +5,7 @@ import urllib.parse
 import re
 import logging
 import inspect
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -141,19 +141,41 @@ async def callback(
     except Exception as e:
         logger.warning(f"⚠️ Failed to get shop info: {e}")
 
+    # Calculate billing period for new tenant initialization
+    now = datetime.utcnow()
+    period_start = datetime(now.year, now.month, 1)
+    period_end = (
+        datetime(now.year + 1, 1, 1) - timedelta(days=1)
+        if now.month == 12
+        else datetime(now.year, now.month + 1, 1) - timedelta(days=1)
+    )
+
     # Save tenant to DB
     await aw(db.tenants.update_one(
         {"shop_domain": shop},
-        {"$set": {
-            "shop_domain": shop,
-            "access_token": encrypt_token(access_token),
-            "scopes": scopes,
-            "plan": "starter",
-            "modules_enabled": ["audit"],
-            "shop_name": shop_info.get("name", shop),
-            "shop_email": shop_info.get("email", ""),
-            "updated_at": _now(),
-        }, "$setOnInsert": {"installed_at": _now()}},
+        {
+            "$set": {
+                "shop_domain": shop,
+                "access_token": encrypt_token(access_token),
+                "scopes": scopes,
+                "modules_enabled": ["audit"],
+                "shop_name": shop_info.get("name", shop),
+                "shop_email": shop_info.get("email", ""),
+                "updated_at": _now(),
+            },
+            "$setOnInsert": {
+                "installed_at": _now(),
+                "plan": "free",
+                "subscription_status": "active",
+                "usage": {
+                    "audits_used_this_month": 0,
+                    "products_scanned_this_month": 0,
+                    "period_start": period_start,
+                    "period_end": period_end,
+                    "last_updated": now,
+                },
+            },
+        },
         upsert=True,
     ))
     logger.info(f"✅ Tenant record updated in database")
