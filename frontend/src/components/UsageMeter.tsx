@@ -74,18 +74,8 @@ export function UsageMeter() {
         </div>
       </div>
 
-      {plan !== 'pro' && plan !== 'enterprise' && (
-        <div className="mt-4">
-          <Link
-            to="/plans"
-            className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 px-4 rounded-lg text-xs font-semibold hover:from-blue-700 hover:to-purple-700 transition"
-          >
-            ⚡ Upgrade to Pro — 50 Audits & 1,000 Products
-          </Link>
-        </div>
-      )}
 
-      {((auditsPercentage >= 60 || productsPercentage >= 100) && isFreePlan) && (
+{((auditsPercentage >= 60 || productsPercentage >= 100) && isFreePlan) && (
         <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-xs text-yellow-800 font-medium mb-1">
             ⚠️ {productsPercentage >= 100
