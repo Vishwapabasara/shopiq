@@ -87,9 +87,9 @@ PLANS = {
             "Email support"
         ]
     },
-    "pro": {
-        "name": "Professional",
-        "price": 29.00,
+    "enterprise": {
+        "name": "Enterprise",
+        "price": 99.00,
         "interval": "EVERY_30_DAYS",
         "audits_per_month": 50,
         "max_products": 1000,
