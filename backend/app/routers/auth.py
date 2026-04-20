@@ -133,6 +133,19 @@ async def callback(
     scopes = token_data.get("scope", "")
     logger.info(f"✅ Access token obtained, scopes: {scopes}")
 
+    # Verify critical scopes were granted
+    required_scopes = {"read_products", "write_products"}
+    granted_scopes = set(scopes.split(","))
+    if not required_scopes.issubset(granted_scopes):
+        missing = required_scopes - granted_scopes
+        logger.error(f"❌ CRITICAL: Missing required scopes: {missing}")
+        logger.error(f"Requested: {settings.SHOPIFY_SCOPES}, Granted: {scopes}")
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/auth/error?reason=missing_scopes&missing={','.join(missing)}",
+            status_code=302
+        )
+    logger.info(f"✅ All required scopes granted: {scopes}")
+
     # Get shop info
     shop_info = {}
     try:

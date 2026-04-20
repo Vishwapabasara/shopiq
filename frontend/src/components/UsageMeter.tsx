@@ -35,10 +35,13 @@ export function UsageMeter() {
   if (!data) return null
 
   const { plan, limits, usage } = data
-  const auditPct = limits.audits_per_month === -1
+  const auditsPercentage = limits.audits_per_month === -1
     ? 0
     : (usage.audits_used / limits.audits_per_month) * 100
-  const showUpgradePrompt = plan === 'free' && auditPct >= 80
+  const productsPercentage = limits.max_products === -1
+    ? 0
+    : (usage.products_scanned / limits.max_products) * 100
+  const isFreePlan = plan === 'free' || plan === 'starter'
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl px-5 py-4">
@@ -71,14 +74,32 @@ export function UsageMeter() {
         </div>
       </div>
 
-      {showUpgradePrompt && (
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-xs text-slate-500">Running low on free audits</p>
+      {plan !== 'pro' && plan !== 'enterprise' && (
+        <div className="mt-4">
           <Link
             to="/plans"
-            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+            className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 px-4 rounded-lg text-xs font-semibold hover:from-blue-700 hover:to-purple-700 transition"
           >
-            Upgrade →
+            ⚡ Upgrade to Pro — 50 Audits & 1,000 Products
+          </Link>
+        </div>
+      )}
+
+      {((auditsPercentage >= 60 || productsPercentage >= 100) && isFreePlan) && (
+        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-xs text-yellow-800 font-medium mb-1">
+            ⚠️ {productsPercentage >= 100
+              ? "You've reached your product limit for this month"
+              : "You're running low on free plan limits"}
+          </p>
+          <p className="text-xs text-yellow-700 mb-2">
+            Upgrade to Pro for 50 audits/month and scan up to 1,000 products!
+          </p>
+          <Link
+            to="/plans"
+            className="inline-block bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-yellow-700 transition"
+          >
+            View Plans
           </Link>
         </div>
       )}

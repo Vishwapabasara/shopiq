@@ -66,6 +66,34 @@ async def create_subscription(
     if plan_type not in PLANS:
         raise HTTPException(400, "Invalid plan type")
 
+    # Test mode: bypass Shopify billing and activate plan directly
+    if settings.DEV_MODE:
+        logger.info(f"🧪 TEST MODE: Bypassing Shopify billing for {tenant['shop_domain']} → {plan_type}")
+        plan_config = PLANS[plan_type]
+        trial_days = plan_config.get("trial_days", 0)
+        trial_ends_at = datetime.utcnow() + timedelta(days=trial_days) if trial_days > 0 else None
+
+        db = await get_db()
+        await aw(db.tenants.update_one(
+            {"_id": tenant["_id"]},
+            {"$set": {
+                "plan": plan_type,
+                "subscription_status": "trial" if trial_days > 0 else "active",
+                "trial_ends_at": trial_ends_at,
+                "shopify_charge_id": f"test_charge_{plan_type}_{int(datetime.utcnow().timestamp())}",
+                "activated_on": datetime.utcnow(),
+            }}
+        ))
+        logger.info(f"✅ Test subscription activated: {tenant['shop_domain']} → {plan_type}")
+        return {
+            "success": True,
+            "test_mode": True,
+            "plan": plan_type,
+            "plan_name": plan_config["name"],
+            "message": f"Successfully upgraded to {plan_config['name']} plan!",
+            "redirect_url": None
+        }
+
     if plan_type == "free":
         db = await get_db()
         await aw(db.tenants.update_one(

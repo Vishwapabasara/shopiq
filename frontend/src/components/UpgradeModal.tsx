@@ -6,8 +6,9 @@ interface UpgradeModalProps {
   onClose: () => void
 }
 
-export function UpgradeModal({ message, onClose }: UpgradeModalProps) {
+export function UpgradeModal({ reason, message, onClose }: UpgradeModalProps) {
   const navigate = useNavigate()
+  const isProductLimit = reason === 'product_limit_exceeded'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -15,11 +16,17 @@ export function UpgradeModal({ message, onClose }: UpgradeModalProps) {
 
       <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 z-10">
         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center mx-auto mb-4">
-          <span className="text-white text-xl">⚡</span>
+          {isProductLimit ? (
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          ) : (
+            <span className="text-white text-xl">⚡</span>
+          )}
         </div>
 
         <h2 className="text-lg font-semibold text-slate-900 text-center mb-2">
-          Upgrade to continue
+          {isProductLimit ? 'Product Limit Reached' : 'Upgrade to continue'}
         </h2>
         <p className="text-sm text-slate-500 text-center mb-5">{message}</p>
 

@@ -29,8 +29,11 @@ export function PlansPage() {
     try {
       const response = await apiClient.post(`/billing/subscribe/${planType}`)
 
-      if (response.confirmation_url) {
-        // Redirect top-level window for Shopify billing
+      if (response.test_mode) {
+        alert(`✅ ${response.message}\n\n(Running in test mode — no charges will be made)`)
+        setCurrentPlan(planType)
+        navigate('/dashboard')
+      } else if (response.confirmation_url) {
         window.top!.location.href = response.confirmation_url
       } else {
         setCurrentPlan(planType)

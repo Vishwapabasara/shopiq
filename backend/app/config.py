@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     SHOPIFY_API_KEY: str = ""
     SHOPIFY_API_SECRET: str = ""
     # In app/config.py
-    SHOPIFY_SCOPES: str = "read_inventory,read_orders,read_products,write_products"
+    SHOPIFY_SCOPES = "read_products,write_products,read_orders,read_inventory"
 
     # App
     APP_URL: str = "http://localhost:8000"
@@ -87,9 +87,9 @@ PLANS = {
             "Email support"
         ]
     },
-    "enterprise": {
-        "name": "Enterprise",
-        "price": 99.00,
+    "pro": {
+        "name": "Professional",
+        "price": 29.00,
         "interval": "EVERY_30_DAYS",
         "audits_per_month": 50,
         "max_products": 1000,
