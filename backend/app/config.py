@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     SHOPIFY_API_KEY: str = ""
     SHOPIFY_API_SECRET: str = ""
     # In app/config.py
-    SHOPIFY_SCOPES = "read_products,write_products,read_orders,read_inventory"
+    SHOPIFY_SCOPES: str = "read_products,write_products,read_orders,read_inventory" 
 
     # App
     APP_URL: str = "http://localhost:8000"
