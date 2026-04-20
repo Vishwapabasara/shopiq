@@ -3,6 +3,7 @@ import inspect
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from bson import ObjectId
+from fastapi.responses import RedirectResponse
 
 from app.dependencies import get_db, get_current_tenant
 from app.services.billing import (
@@ -103,19 +104,21 @@ async def billing_callback(
     charge_id: str = Query(...),
     tenant: dict = Depends(get_current_tenant)
 ):
-    """Handle callback after user approves subscription"""
+    """Handle callback after merchant approves subscription"""
     try:
-        charge = await activate_charge(
+        # GraphQL: subscription is already active after merchant approves
+        # charge_id is the GraphQL subscription ID (gid://shopify/AppSubscription/...)
+        charge = await get_current_charge(
             tenant["shop_domain"],
             tenant["_token"],
             charge_id
         )
 
-        trial_days = charge.get("trial_days", 0)
+        trial_days = charge.get("trialDays", 0) if charge else 0
         trial_ends_at = datetime.utcnow() + timedelta(days=trial_days) if trial_days > 0 else None
 
         db = await get_db()
-        plan_type = tenant.get("pending_plan", "pro")
+        plan_type = tenant.get("pending_plan", "starter")
 
         await aw(db.tenants.update_one(
             {"_id": tenant["_id"]},
@@ -123,9 +126,8 @@ async def billing_callback(
                 "$set": {
                     "plan": plan_type,
                     "subscription_status": "trial" if trial_days > 0 else "active",
-                    "shopify_charge_id": str(charge["id"]),
+                    "shopify_charge_id": charge_id,
                     "trial_ends_at": trial_ends_at,
-                    "billing_on": charge.get("billing_on"),
                     "activated_on": datetime.utcnow(),
                 },
                 "$unset": {"pending_charge_id": "", "pending_plan": ""}
@@ -133,16 +135,14 @@ async def billing_callback(
         ))
 
         logger.info(f"✅ Subscription activated for {tenant['shop_domain']}: {plan_type}")
-        return {
-            "success": True,
-            "message": f"Successfully subscribed to {PLANS[plan_type]['name']} plan!",
-            "redirect_url": f"{settings.FRONTEND_URL}/dashboard?upgraded=true"
-        }
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/dashboard?upgraded=true",
+            status_code=302
+        )
 
     except Exception as e:
         logger.error(f"❌ Failed to activate subscription: {e}")
         raise HTTPException(500, f"Failed to activate subscription: {str(e)}")
-
 
 @router.post("/cancel")
 async def cancel_subscription_endpoint(tenant: dict = Depends(get_current_tenant)):

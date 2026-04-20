@@ -75,6 +75,18 @@ PLANS = {
             "Email support"
         ]
     },
+    "starter": {
+        "name": "Starter",
+        "price": 0,
+        "audits_per_month": 6,
+        "max_products": 50,
+        "features": [
+            "6 audits per month",
+            "Up to 50 products",
+            "Basic scoring",
+            "Email support"
+        ]
+    },
     "pro": {
         "name": "Professional",
         "price": 29.00,
