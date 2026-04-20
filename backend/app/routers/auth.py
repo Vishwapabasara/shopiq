@@ -47,9 +47,102 @@ def _verify_hmac(query_params: dict, secret: str) -> bool:
     return hmac_lib.compare_digest(expected, received)
 
 
+# ✅ NEW: Webhook registration function
+async def register_gdpr_webhooks(shop_domain: str, access_token: str) -> dict:
+    """
+    Register Shopify's mandatory GDPR compliance webhooks.
+    Required for App Store approval.
+    
+    Returns dict with registration status for each webhook.
+    """
+    # Use BACKEND_URL from settings or fallback
+    backend_url = getattr(settings, 'BACKEND_URL', None) or getattr(settings, 'APP_URL', None)
+    if not backend_url:
+        backend_url = "https://shopiq-production.up.railway.app"
+    
+    # Remove trailing slash if present
+    backend_url = backend_url.rstrip('/')
+    
+    webhooks_to_register = [
+        {
+            "topic": "customers/data_request",
+            "address": f"{backend_url}/webhooks/customers/data_request",
+            "format": "json"
+        },
+        {
+            "topic": "customers/redact",
+            "address": f"{backend_url}/webhooks/customers/redact",
+            "format": "json"
+        },
+        {
+            "topic": "shop/redact",
+            "address": f"{backend_url}/webhooks/shop/redact",
+            "format": "json"
+        }
+    ]
+    
+    results = {}
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # First, get list of existing webhooks
+        try:
+            list_response = await client.get(
+                f"https://{shop_domain}/admin/api/2024-01/webhooks.json",
+                headers={"X-Shopify-Access-Token": access_token}
+            )
+            existing_webhooks = list_response.json().get("webhooks", [])
+        except Exception as e:
+            logger.error(f"Could not list existing webhooks: {e}")
+            existing_webhooks = []
+        
+        # Register each webhook
+        for webhook_data in webhooks_to_register:
+            topic = webhook_data["topic"]
+            address = webhook_data["address"]
+            
+            try:
+                # Check if already exists
+                already_exists = any(
+                    w.get("topic") == topic and w.get("address") == address
+                    for w in existing_webhooks
+                )
+                
+                if already_exists:
+                    logger.info(f"ℹ️ Webhook already exists: {topic}")
+                    results[topic] = "already_exists"
+                    continue
+                
+                # Register the webhook
+                response = await client.post(
+                    f"https://{shop_domain}/admin/api/2024-01/webhooks.json",
+                    headers={
+                        "X-Shopify-Access-Token": access_token,
+                        "Content-Type": "application/json"
+                    },
+                    json={"webhook": webhook_data}
+                )
+                
+                if response.status_code == 201:
+                    logger.info(f"✅ Successfully registered: {topic}")
+                    results[topic] = "registered"
+                elif response.status_code == 422:
+                    # Already exists or validation error
+                    error_msg = response.json().get("errors", {})
+                    logger.info(f"ℹ️ Webhook {topic}: {error_msg}")
+                    results[topic] = "already_exists"
+                else:
+                    logger.error(f"❌ Failed to register {topic}: {response.status_code} - {response.text}")
+                    results[topic] = f"failed_{response.status_code}"
+                    
+            except Exception as e:
+                logger.error(f"❌ Exception registering {topic}: {e}")
+                results[topic] = f"error_{str(e)[:50]}"
+    
+    return results
+
+
 # ── GET /shopify/install ──────────────────────────────────────────────────────
 
-# In /install endpoint — save state to DB instead of session
 @router.get("/shopify/install")
 async def install(request: Request, shop: str = Query(...)):
     logger.info(f"🚀 Install initiated for shop: {shop}")
@@ -59,7 +152,7 @@ async def install(request: Request, shop: str = Query(...)):
 
     state = secrets.token_urlsafe(32)
 
-    # ← Store in DB instead of session (more reliable cross-origin)
+    # Store in DB instead of session (more reliable cross-origin)
     db = await get_db()
     await aw(db.oauth_states.update_one(
         {"shop": shop},
@@ -84,7 +177,8 @@ async def install(request: Request, shop: str = Query(...)):
     return RedirectResponse(url=auth_url, status_code=302)
 
 
-# In /callback endpoint — verify state from DB instead of session
+# ── GET /shopify/callback ─────────────────────────────────────────────────────
+
 @router.get("/shopify/callback")
 async def callback(
     request: Request,
@@ -95,7 +189,7 @@ async def callback(
 ):
     logger.info(f"🔙 Callback received for shop: {shop}")
 
-    # ← Verify state from DB
+    # Verify state from DB
     db = await get_db()
     stored = await aw(db.oauth_states.find_one({"shop": shop}))
 
@@ -193,6 +287,15 @@ async def callback(
     ))
     logger.info(f"✅ Tenant record updated in database")
 
+    # ✅ NEW: Register GDPR compliance webhooks
+    logger.info(f"🔗 Registering GDPR webhooks for {shop}")
+    try:
+        webhook_results = await register_gdpr_webhooks(shop, access_token)
+        logger.info(f"✅ Webhooks registered: {webhook_results}")
+    except Exception as webhook_error:
+        logger.warning(f"⚠️ Webhook registration failed (non-critical): {webhook_error}")
+        # Don't fail the OAuth flow if webhooks fail - they can be retried
+
     # Get tenant_id for session creation
     tenant_doc = await aw(db.tenants.find_one({"shop_domain": shop}, {"_id": 1}))
     tenant_id = str(tenant_doc["_id"])
@@ -215,6 +318,7 @@ async def callback(
     redirect_url = f"{settings.FRONTEND_URL}/auth/callback?shop={shop}&session={session_id}"
     logger.info(f"🔄 Redirecting to: {redirect_url}")
     return RedirectResponse(url=redirect_url, status_code=302)
+
 
 # ── GET /me ───────────────────────────────────────────────────────────────────
 
