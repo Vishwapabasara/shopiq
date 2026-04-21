@@ -99,7 +99,7 @@ async def score_product_ai(
         response = await asyncio.wait_for(
             asyncio.to_thread(
                 client.models.generate_content,
-                model='models/gemini-1.5-flash-latest',
+                model='models/gemini-1.5-flash',
                 contents=full_prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.3,
