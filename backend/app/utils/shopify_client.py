@@ -6,7 +6,7 @@ import asyncio
 import httpx
 from typing import AsyncGenerator
 
-SHOPIFY_API_VERSION = "2024-01"
+SHOPIFY_API_VERSION = "2025-01"
 REQUIRED_SCOPES = ["read_products"]
 
 

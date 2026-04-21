@@ -83,7 +83,7 @@ async def register_gdpr_webhooks(shop_domain: str, access_token: str) -> dict:
         # First, get list of existing webhooks
         try:
             list_response = await client.get(
-                f"https://{shop_domain}/admin/api/2024-01/webhooks.json",
+                f"https://{shop_domain}/admin/api/2025-01/webhooks.json",
                 headers={"X-Shopify-Access-Token": access_token}
             )
             existing_webhooks = list_response.json().get("webhooks", [])
@@ -110,7 +110,7 @@ async def register_gdpr_webhooks(shop_domain: str, access_token: str) -> dict:
                 
                 # Register the webhook
                 response = await client.post(
-                    f"https://{shop_domain}/admin/api/2024-01/webhooks.json",
+                    f"https://{shop_domain}/admin/api/2025-01/webhooks.json",
                     headers={
                         "X-Shopify-Access-Token": access_token,
                         "Content-Type": "application/json"
@@ -489,7 +489,7 @@ async def webhook_status(shop: str = Query(...)):
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(
-            f"https://{shop}/admin/api/2024-01/webhooks.json",
+            f"https://{shop}/admin/api/2025-01/webhooks.json",
             headers={"X-Shopify-Access-Token": access_token},
         )
 
