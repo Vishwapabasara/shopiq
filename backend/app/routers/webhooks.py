@@ -1,3 +1,4 @@
+import base64
 import logging
 import hmac
 import hashlib
@@ -12,14 +13,16 @@ logger = logging.getLogger(__name__)
 
 
 def verify_webhook(data: bytes, hmac_header: str) -> bool:
-    """Verify Shopify webhook HMAC signature"""
-    calculated_hmac = hmac.new(
-        settings.SHOPIFY_CLIENT_SECRET.encode('utf-8'),
+    """Verify Shopify webhook HMAC signature.
+    Shopify sends X-Shopify-Hmac-Sha256 as Base64(HMAC-SHA256(secret, raw_body)).
+    """
+    digest = hmac.new(
+        settings.SHOPIFY_API_SECRET.encode('utf-8'),
         data,
         hashlib.sha256
-    ).hexdigest()
-    
-    return hmac.compare_digest(calculated_hmac, hmac_header)
+    ).digest()
+    calculated = base64.b64encode(digest).decode('utf-8')
+    return hmac.compare_digest(calculated, hmac_header)
 
 
 @router.post("/customers/data_request")
