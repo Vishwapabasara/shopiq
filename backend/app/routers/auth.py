@@ -13,7 +13,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 
 from app.config import settings
 from app.dependencies import get_db
-from app.utils.crypto import encrypt_token
+from app.utils.crypto import encrypt_token, decrypt_token
 from app.utils.shopify_client import get_shop_info
 from app.services.session_manager import create_session as create_db_session, get_session, delete_session
 
@@ -55,13 +55,9 @@ async def register_gdpr_webhooks(shop_domain: str, access_token: str) -> dict:
     
     Returns dict with registration status for each webhook.
     """
-    # Use BACKEND_URL from settings or fallback
-    backend_url = getattr(settings, 'BACKEND_URL', None) or getattr(settings, 'APP_URL', None)
-    if not backend_url:
-        backend_url = "https://shopiq-production.up.railway.app"
-    
-    # Remove trailing slash if present
-    backend_url = backend_url.rstrip('/')
+    # BACKEND_URL must be a public HTTPS URL reachable by Shopify.
+    # Set BACKEND_URL in .env to your live deployment URL.
+    backend_url = (settings.BACKEND_URL or settings.APP_URL).rstrip('/')
     
     webhooks_to_register = [
         {
@@ -463,4 +459,101 @@ async def test_install_url(shop: str = "test.myshopify.com"):
         "shopify_scopes": settings.SHOPIFY_SCOPES,
         "app_url": settings.APP_URL,
         "full_oauth_url": auth_url,
+    }
+
+
+# ── GET /webhooks/status ──────────────────────────────────────────────────────
+
+_GDPR_TOPICS = {"customers/data_request", "customers/redact", "shop/redact"}
+
+
+@router.get("/webhooks/status")
+async def webhook_status(shop: str = Query(...)):
+    """
+    Query Shopify's API and report which of the 3 mandatory GDPR webhooks
+    are currently registered for the given shop.
+    """
+    if not _valid_shop(shop):
+        raise HTTPException(400, "Invalid shop domain")
+
+    db = await get_db()
+    tenant = await aw(db.tenants.find_one({"shop_domain": shop}))
+    if not tenant:
+        raise HTTPException(404, "Shop not installed — complete OAuth first")
+
+    raw_token = tenant.get("access_token", "")
+    if not raw_token:
+        raise HTTPException(400, "No access token stored for this shop")
+
+    access_token = decrypt_token(raw_token)
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(
+            f"https://{shop}/admin/api/2024-01/webhooks.json",
+            headers={"X-Shopify-Access-Token": access_token},
+        )
+
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, f"Shopify API error: {resp.text}")
+
+    all_webhooks = resp.json().get("webhooks", [])
+    registered_topics = {w["topic"] for w in all_webhooks}
+
+    gdpr_status = {
+        topic: {
+            "registered": topic in registered_topics,
+            "webhook": next((w for w in all_webhooks if w["topic"] == topic), None),
+        }
+        for topic in _GDPR_TOPICS
+    }
+
+    return {
+        "shop": shop,
+        "backend_url_used": (settings.BACKEND_URL or settings.APP_URL).rstrip("/"),
+        "all_gdpr_registered": _GDPR_TOPICS.issubset(registered_topics),
+        "gdpr_status": gdpr_status,
+        "all_webhooks": all_webhooks,
+    }
+
+
+# ── POST /webhooks/register ───────────────────────────────────────────────────
+
+@router.post("/webhooks/register")
+async def force_register_webhooks(shop: str = Query(...)):
+    """
+    Force (re-)registration of the 3 mandatory GDPR compliance webhooks.
+    Use this for shops that installed before webhook registration was wired up,
+    or after changing BACKEND_URL.
+    """
+    if not _valid_shop(shop):
+        raise HTTPException(400, "Invalid shop domain")
+
+    db = await get_db()
+    tenant = await aw(db.tenants.find_one({"shop_domain": shop}))
+    if not tenant:
+        raise HTTPException(404, "Shop not installed — complete OAuth first")
+
+    raw_token = tenant.get("access_token", "")
+    if not raw_token:
+        raise HTTPException(400, "No access token stored for this shop")
+
+    access_token = decrypt_token(raw_token)
+
+    results = await register_gdpr_webhooks(shop, access_token)
+
+    all_ok = all(v in ("registered", "already_exists") for v in results.values())
+    missing = [t for t, v in results.items() if v not in ("registered", "already_exists")]
+
+    logger.info(f"{'✅' if all_ok else '❌'} Webhook re-registration for {shop}: {results}")
+
+    return {
+        "shop": shop,
+        "results": results,
+        "all_registered": all_ok,
+        "missing": missing,
+        "message": (
+            "All 3 GDPR webhooks registered successfully"
+            if all_ok
+            else f"Failed topics: {missing} — check BACKEND_URL is a live public HTTPS URL"
+        ),
     }

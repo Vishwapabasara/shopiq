@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     # App
     APP_URL: str = "http://localhost:8000"
+    BACKEND_URL: str = ""  # Public HTTPS URL Shopify uses for webhook callbacks; falls back to APP_URL
     SESSION_SECRET: str = "dev-secret-replace-in-production"
     FRONTEND_URL: str = "https://shopiq-iota.vercel.app"
 

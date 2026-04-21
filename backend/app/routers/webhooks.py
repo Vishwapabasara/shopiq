@@ -12,6 +12,28 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 logger = logging.getLogger(__name__)
 
 
+@router.get("/status")
+async def webhook_status():
+    """
+    Public debug endpoint — confirms routes are live and shows expected webhook URLs.
+    No auth required (Shopify must reach /webhooks/* without a session cookie).
+    For full Shopify registration status use GET /auth/webhooks/status?shop=<shop>.
+    """
+    backend_url = (settings.BACKEND_URL or settings.APP_URL).rstrip("/")
+    return {
+        "status": "ok",
+        "app_url": settings.APP_URL,
+        "backend_url": settings.BACKEND_URL or "(not set — falling back to APP_URL)",
+        "shopify_api_secret_configured": bool(settings.SHOPIFY_API_SECRET),
+        "expected_webhook_urls": {
+            "customers/data_request": f"{backend_url}/webhooks/customers/data_request",
+            "customers/redact":       f"{backend_url}/webhooks/customers/redact",
+            "shop/redact":            f"{backend_url}/webhooks/shop/redact",
+        },
+        "note": "Use POST /auth/webhooks/register?shop=<shop> to force-register webhooks",
+    }
+
+
 def verify_webhook(data: bytes, hmac_header: str) -> bool:
     """Verify Shopify webhook HMAC signature.
     Shopify sends X-Shopify-Hmac-Sha256 as Base64(HMAC-SHA256(secret, raw_body)).
