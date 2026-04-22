@@ -16,16 +16,8 @@ redirect_urls = [
 api_version = "2026-04"
 
   [[webhooks.subscriptions]]
-  compliance_topics = ["customers/data_request"]
-  uri = "https://shopiq-production.up.railway.app/webhooks/customers/data_request"
-
-  [[webhooks.subscriptions]]
-  compliance_topics = ["customers/redact"]
-  uri = "https://shopiq-production.up.railway.app/webhooks/customers/redact"
-
-  [[webhooks.subscriptions]]
-  compliance_topics = ["shop/redact"]
-  uri = "https://shopiq-production.up.railway.app/webhooks/shop/redact"
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "/webhooks/compliance"
 
 [pos]
 embedded = false

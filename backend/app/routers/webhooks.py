@@ -47,6 +47,72 @@ def verify_webhook(data: bytes, hmac_header: str) -> bool:
     return hmac.compare_digest(calculated, hmac_header)
 
 
+@router.post("/compliance")
+async def compliance_dispatcher(
+    request: Request,
+    x_shopify_hmac_sha256: str = Header(None),
+    x_shopify_topic: str = Header(None),
+):
+    """
+    Single compliance endpoint declared in shopify.app.toml.
+    Shopify sends all 3 GDPR topics here; dispatched via X-Shopify-Topic header.
+    """
+    body = await request.body()
+
+    if not x_shopify_hmac_sha256 or not verify_webhook(body, x_shopify_hmac_sha256):
+        logger.error(f"❌ Invalid HMAC on compliance webhook (topic={x_shopify_topic})")
+        raise HTTPException(status_code=401, detail="Invalid HMAC")
+
+    data = await request.json()
+    shop_domain = data.get("shop_domain")
+    db = await get_db()
+
+    if x_shopify_topic == "customers/data_request":
+        logger.info(f"📋 Customer data request from {shop_domain}")
+        await db.compliance_logs.insert_one({
+            "type": "customer_data_request",
+            "shop_domain": shop_domain,
+            "customer_email": data.get("customer", {}).get("email"),
+            "requested_at": datetime.utcnow(),
+            "response": "No customer data stored by ShopIQ",
+        })
+
+    elif x_shopify_topic == "customers/redact":
+        logger.info(f"🗑️ Customer redact from {shop_domain}")
+        await db.compliance_logs.insert_one({
+            "type": "customer_redact",
+            "shop_domain": shop_domain,
+            "customer_id": data.get("customer", {}).get("id"),
+            "customer_email": data.get("customer", {}).get("email"),
+            "requested_at": datetime.utcnow(),
+            "action_taken": "No customer data stored - nothing to redact",
+        })
+
+    elif x_shopify_topic == "shop/redact":
+        logger.info(f"🗑️ Shop redact for {shop_domain}")
+        shop_id = data.get("shop_id")
+        await db.compliance_logs.insert_one({
+            "type": "shop_redact",
+            "shop_domain": shop_domain,
+            "shop_id": shop_id,
+            "requested_at": datetime.utcnow(),
+            "status": "pending_deletion",
+        })
+        await db.tenants.delete_one({"shop_domain": shop_domain})
+        await db.audits.delete_many({"shop_domain": shop_domain})
+        await db.sessions.delete_many({"shop_domain": shop_domain})
+        await db.compliance_logs.update_one(
+            {"shop_domain": shop_domain, "type": "shop_redact", "status": "pending_deletion"},
+            {"$set": {"status": "completed", "deleted_at": datetime.utcnow()}},
+        )
+        logger.info(f"✅ Deleted all data for shop: {shop_domain}")
+
+    else:
+        logger.warning(f"⚠️ Unknown compliance topic: {x_shopify_topic}")
+
+    return {"message": "ok"}
+
+
 @router.post("/customers/data_request")
 async def customer_data_request(
     request: Request,
