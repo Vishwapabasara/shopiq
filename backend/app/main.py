@@ -96,7 +96,7 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ShopIQ</title>
-    <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
 </head>
 <body>
     <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif">
@@ -108,27 +108,13 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
 
     <script>
         const shop = '{shop}';
-        const host = '{host or ""}';
         const sessionId = '{session["session_id"]}';
 
-        // Store session in localStorage for persistence
         localStorage.setItem('shopiq_session', sessionId);
         localStorage.setItem('shopiq_shop', shop);
 
-        const AppBridge = window['app-bridge'];
-        const createApp = AppBridge.default;
-        const Redirect = AppBridge.actions.Redirect;
-
-        const app = createApp({{
-            apiKey: '{settings.SHOPIFY_API_KEY}',
-            host: host || btoa(shop + '/admin'),
-        }});
-
-        const redirect = Redirect.create(app);
-        redirect.dispatch(Redirect.Action.REMOTE, {{
-            url: '{settings.FRONTEND_URL}/dashboard?shop=' + shop + '&session=' + sessionId,
-            newContext: false
-        }});
+        // App Bridge v4 auto-initializes from CDN; navigate to React frontend
+        window.location.href = '{settings.FRONTEND_URL}/dashboard?shop=' + encodeURIComponent(shop) + '&session=' + encodeURIComponent(sessionId);
     </script>
 </body>
 </html>

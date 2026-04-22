@@ -10,9 +10,24 @@ const BASE_URL = (
 )
 
 export const api = axios.create({
-   baseURL: import.meta.env.DEV ? 'http://localhost:8000' : import.meta.env.VITE_API_URL || '',
-  withCredentials: true,   // ← CRITICAL — sends cookies cross-origin
+  baseURL: import.meta.env.DEV ? 'http://localhost:8000' : import.meta.env.VITE_API_URL || '',
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
+})
+
+// Attach Shopify session token when running inside Shopify Admin (embedded app)
+api.interceptors.request.use(async (config) => {
+  try {
+    const shopify = (window as any).shopify
+    if (shopify?.idToken) {
+      const token = await shopify.idToken()
+      config.headers = config.headers ?? {}
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+  } catch {
+    // Not in embedded context — cookie auth is the fallback
+  }
+  return config
 })
 
 // ── Types ─────────────────────────────────────────────────────────────────────
