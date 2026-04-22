@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import logo from '../assets/shopiq-lettermark-1200.png'
 
 export function LoginPage() {
   const [shop, setShop] = useState('')
@@ -121,11 +122,9 @@ export function LoginPage() {
       <div className="w-full max-w-sm space-y-4">
 
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-2 justify-center">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">IQ</span>
-          </div>
-          <div>
+        <div className="flex flex-col items-center gap-2 mb-2">
+          <img src={logo} alt="ShopIQ" className="w-20 h-20 object-contain" />
+          <div className="text-center">
             <h1 className="font-semibold text-slate-900 text-lg leading-tight">ShopIQ</h1>
             <p className="text-xs text-slate-400">Shopify Intelligence Platform</p>
           </div>

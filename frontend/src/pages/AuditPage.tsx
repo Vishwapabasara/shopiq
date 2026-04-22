@@ -98,13 +98,19 @@ export function AuditPage() {
           disabled={isTriggering || isRunning}
           className="btn-primary flex items-center gap-2"
         >
-          {(isTriggering || isRunning) && <Spinner size={14} className="text-white" />}
+          {(isTriggering || isRunning) ? (
+            <Spinner size={14} className="text-white" />
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+          )}
           {isTriggering ? 'Starting…' : isRunning ? 'Running…' : 'Run new audit'}
         </button>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 px-8 py-6 space-y-5 max-w-6xl">
+      <div className="flex-1 px-8 py-6 space-y-5 max-w-6xl mx-auto w-full">
         <UsageMeter />
 
         {/* Error state */}

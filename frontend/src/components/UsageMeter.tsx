@@ -74,8 +74,7 @@ export function UsageMeter() {
         </div>
       </div>
 
-
-{((auditsPercentage >= 60 || productsPercentage >= 100) && isFreePlan) && (
+      {((auditsPercentage >= 60 || productsPercentage >= 100) && isFreePlan) && (
         <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-xs text-yellow-800 font-medium mb-1">
             ⚠️ {productsPercentage >= 100
@@ -95,4 +94,5 @@ export function UsageMeter() {
       )}
     </div>
   )
+
 }
