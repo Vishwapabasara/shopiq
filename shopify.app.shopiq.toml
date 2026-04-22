@@ -1,0 +1,21 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "7eb3bb3f96ff67af0a8a52125136b745"
+name = "ShopIQ"
+application_url = "https://shopiq-production.up.railway.app"
+embedded = true
+
+[webhooks]
+api_version = "2026-04"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_inventory,read_orders,read_products,write_products"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://shopiq-production.up.railway.app/auth/shopify/callback",
+  "https://shopiq-iota.vercel.app/auth/callback"
+]

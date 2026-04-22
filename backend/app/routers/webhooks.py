@@ -47,7 +47,7 @@ def verify_webhook(data: bytes, hmac_header: str) -> bool:
     return hmac.compare_digest(calculated, hmac_header)
 
 
-@router.post("/compliance")
+@router.post("")
 async def compliance_dispatcher(
     request: Request,
     x_shopify_hmac_sha256: str = Header(None),
