@@ -1,0 +1,31 @@
+name = "ShopIQ"
+client_id = "7cb3bb3f9bff67af8a8a52125134b745"
+application_url = "https://shopiq-production.up.railway.app"
+embedded = true
+
+[access_scopes]
+scopes = "read_inventory,read_orders,read_products,write_products"
+
+[auth]
+redirect_urls = [
+  "https://shopiq-production.up.railway.app/auth/shopify/callback",
+  "https://shopiq-iota.vercel.app/auth/callback"
+]
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request"]
+  uri = "https://shopiq-production.up.railway.app/webhooks/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/redact"]
+  uri = "https://shopiq-production.up.railway.app/webhooks/customers/redact"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["shop/redact"]
+  uri = "https://shopiq-production.up.railway.app/webhooks/shop/redact"
+
+[pos]
+embedded = false
