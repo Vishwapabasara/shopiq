@@ -2,8 +2,6 @@ import { useState } from 'react'
 import logo from '../assets/shopiq-lettermark-1200.png'
 
 export function LoginPage() {
-  const [shop, setShop] = useState('')
-  const [shopError, setShopError] = useState('')
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<'idle' | 'login' | 'seeding' | 'done' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -72,34 +70,6 @@ export function LoginPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleInstall = () => {
-    setLoading(true)
-    setShopError('')
-
-    const clean = shop.trim().toLowerCase()
-      .replace(/^https?:\/\//, '')
-      .replace(/\/$/, '')
-    
-    const domain = clean.endsWith('.myshopify.com') ? clean : `${clean}.myshopify.com`
-    
-    // Validate shop domain
-    if (!/^[a-z0-9][a-z0-9\-]*\.myshopify\.com$/.test(domain)) {
-      setShopError('Enter a valid Shopify store URL e.g. mystore.myshopify.com')
-      setLoading(false)
-      return
-    }
-    
-    // CRITICAL: Redirect directly to backend (not relative URL)
-    const installUrl = `${BACKEND_URL}/auth/shopify/install?shop=${domain}`
-    
-    console.log('🔗 Redirecting to backend:', installUrl)
-    
-    // Add small delay so user sees the loading state
-    setTimeout(() => {
-      window.location.href = installUrl
-    }, 300)
   }
 
   const stepLabel: Record<string, string> = {
@@ -198,54 +168,30 @@ export function LoginPage() {
           </div>
         )}
 
-        {/* Real Shopify install */}
-        <div className="card p-6 space-y-4">
+        {/* Shopify App Store install */}
+        <div className="card p-6 space-y-4 text-center">
           <div>
             <h2 className="font-semibold text-slate-800 mb-1">
-              {isDev ? 'Or connect a real store' : 'Connect your store'}
+              {isDev ? 'Install on a real store' : 'Install ShopIQ'}
             </h2>
-            <p className="text-sm text-slate-500">Enter your Shopify store URL to install ShopIQ.</p>
+            <p className="text-sm text-slate-500">
+              ShopIQ is available on the Shopify App Store. Install it directly from your Shopify Admin.
+            </p>
           </div>
-          <div>
-            <label className="text-xs font-medium text-slate-600 block mb-1.5">Store URL</label>
-            <div className="flex">
-              <input
-                type="text"
-                value={shop}
-                onChange={e => { setShop(e.target.value); setShopError('') }}
-                onKeyDown={e => e.key === 'Enter' && !loading && handleInstall()}
-                placeholder="mystore"
-                disabled={loading}
-                className="flex-1 border border-r-0 border-slate-200 rounded-l-lg px-3 py-2.5
-                           text-sm focus:outline-none focus:border-brand-400 transition-colors
-                           disabled:bg-slate-100 disabled:cursor-not-allowed"
-              />
-              <span className="border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm
-                               text-slate-400 rounded-r-lg border-l-0 whitespace-nowrap">
-                .myshopify.com
-              </span>
-            </div>
-            {shopError && <p className="text-xs text-red-500 mt-1.5">{shopError}</p>}
-          </div>
-          <button 
-            onClick={handleInstall} 
-            disabled={loading || !shop.trim()}
-            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed
-                       flex items-center justify-center gap-2"
+          <a
+            href="https://apps.shopify.com/shopiq"
+            className="btn-primary w-full flex items-center justify-center gap-2"
           >
-            {loading ? (
-              <>
-                <Spinner />
-                Connecting...
-              </>
-            ) : (
-              'Install ShopIQ →'
-            )}
-          </button>
-          <p className="text-xs text-slate-400 text-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            View on Shopify App Store
+          </a>
+          <p className="text-xs text-slate-400">
             Free audit up to 10 products. No credit card required.
           </p>
-          
+
           {/* Debug info in dev */}
           {isDev && (
             <p className="text-[10px] text-slate-400 text-center font-mono">
