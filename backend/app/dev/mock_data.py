@@ -393,3 +393,73 @@ MOCK_SHOP = {
 }
 
 MOCK_SHOP_DOMAIN = "demo.myshopify.com"
+
+
+# ── Mock orders (90-day window with realistic refund patterns) ─────────────────
+
+MOCK_ORDERS = [
+    # ── Refunded: size/fit ─────────────────────────────────────────────────────
+    {
+        "id": 5001, "name": "#1001", "email": "alice@example.com",
+        "created_at": "2024-02-10T10:00:00+00:00",
+        "financial_status": "refunded", "total_price": "89.00", "currency": "GBP",
+        "customer": {"id": 101, "first_name": "Alice", "last_name": "Brown", "email": "alice@example.com"},
+        "line_items": [{"id": 901, "product_id": 1001, "title": "Premium Merino Wool Crew Neck Sweater", "quantity": 1, "price": "89.00", "handle": "premium-merino-wool-crew-neck-sweater", "image": {"src": None}}],
+        "refunds": [{"id": 801, "created_at": "2024-02-15T10:00:00+00:00", "reason": "customer", "note": "Too large, doesn't fit properly", "refund_line_items": [{"id": 701, "line_item_id": 901, "quantity": 1, "subtotal": "89.00"}]}],
+    },
+    # ── Refunded: wrong item ───────────────────────────────────────────────────
+    {
+        "id": 5002, "name": "#1002", "email": "bob@example.com",
+        "created_at": "2024-02-12T11:00:00+00:00",
+        "financial_status": "refunded", "total_price": "45.00", "currency": "GBP",
+        "customer": {"id": 102, "first_name": "Bob", "last_name": "Smith", "email": "bob@example.com"},
+        "line_items": [{"id": 902, "product_id": 1003, "title": "Full-Grain Leather Bifold Wallet", "quantity": 1, "price": "45.00", "handle": "leather-bifold-wallet", "image": {"src": None}}],
+        "refunds": [{"id": 802, "created_at": "2024-02-14T09:00:00+00:00", "reason": "inventory", "note": "Received wrong colour — ordered black, got brown", "refund_line_items": [{"id": 702, "line_item_id": 902, "quantity": 1, "subtotal": "45.00"}]}],
+    },
+    # ── Refunded: damaged ─────────────────────────────────────────────────────
+    {
+        "id": 5003, "name": "#1003", "email": "carol@example.com",
+        "created_at": "2024-02-18T14:00:00+00:00",
+        "financial_status": "refunded", "total_price": "120.00", "currency": "GBP",
+        "customer": {"id": 103, "first_name": "Carol", "last_name": "Jones", "email": "carol@example.com"},
+        "line_items": [{"id": 903, "product_id": 1006, "title": "Vintage Brass Desk Lamp", "quantity": 1, "price": "120.00", "handle": "vintage-brass-desk-lamp", "image": {"src": None}}],
+        "refunds": [{"id": 803, "created_at": "2024-02-20T08:00:00+00:00", "reason": "other", "note": "Arrived broken — cracked shade and bent arm", "refund_line_items": [{"id": 703, "line_item_id": 903, "quantity": 1, "subtotal": "120.00"}]}],
+    },
+    # ── Refunded: size/fit again (repeat customer flagged) ────────────────────
+    {
+        "id": 5004, "name": "#1004", "email": "alice@example.com",
+        "created_at": "2024-02-22T09:00:00+00:00",
+        "financial_status": "refunded", "total_price": "89.00", "currency": "GBP",
+        "customer": {"id": 101, "first_name": "Alice", "last_name": "Brown", "email": "alice@example.com"},
+        "line_items": [{"id": 904, "product_id": 1001, "title": "Premium Merino Wool Crew Neck Sweater", "quantity": 1, "price": "89.00", "handle": "premium-merino-wool-crew-neck-sweater", "image": {"src": None}}],
+        "refunds": [{"id": 804, "created_at": "2024-02-25T10:00:00+00:00", "reason": "customer", "note": "Still too small — sizing runs very small", "refund_line_items": [{"id": 704, "line_item_id": 904, "quantity": 1, "subtotal": "89.00"}]}],
+    },
+    # ── Refunded: quality ─────────────────────────────────────────────────────
+    {
+        "id": 5005, "name": "#1005", "email": "dave@example.com",
+        "created_at": "2024-03-01T10:00:00+00:00",
+        "financial_status": "refunded", "total_price": "28.00", "currency": "GBP",
+        "customer": {"id": 104, "first_name": "Dave", "last_name": "Wilson", "email": "dave@example.com"},
+        "line_items": [{"id": 905, "product_id": 1008, "title": "EcoCarry Small Tote Bag", "quantity": 1, "price": "28.00", "handle": "ecocarry-small-tote", "image": {"src": None}}],
+        "refunds": [{"id": 805, "created_at": "2024-03-04T12:00:00+00:00", "reason": "customer", "note": "Poor quality — stitching came apart after one use", "refund_line_items": [{"id": 705, "line_item_id": 905, "quantity": 1, "subtotal": "28.00"}]}],
+    },
+    # ── Refunded: not needed ──────────────────────────────────────────────────
+    {
+        "id": 5006, "name": "#1006", "email": "eve@example.com",
+        "created_at": "2024-03-05T15:00:00+00:00",
+        "financial_status": "refunded", "total_price": "38.00", "currency": "GBP",
+        "customer": {"id": 105, "first_name": "Eve", "last_name": "Taylor", "email": "eve@example.com"},
+        "line_items": [{"id": 906, "product_id": 1007, "title": "HydraFlow 750ml Insulated Water Bottle", "quantity": 1, "price": "38.00", "handle": "hydraflow-750ml-insulated-water-bottle", "image": {"src": None}}],
+        "refunds": [{"id": 806, "created_at": "2024-03-07T09:00:00+00:00", "reason": "customer", "note": "Changed mind, no longer needed", "refund_line_items": [{"id": 706, "line_item_id": 906, "quantity": 1, "subtotal": "38.00"}]}],
+    },
+    # ── Fulfilled (no refund) ─────────────────────────────────────────────────
+    {"id": 5007, "name": "#1007", "email": "frank@example.com", "created_at": "2024-02-08T10:00:00+00:00", "financial_status": "paid", "total_price": "65.00", "currency": "GBP", "customer": {"id": 106, "first_name": "Frank", "last_name": "Lee", "email": "frank@example.com"}, "line_items": [{"id": 907, "product_id": 1012, "title": "Solid Oak Floating Shelf", "quantity": 1, "price": "65.00", "handle": "solid-oak-floating-shelf", "image": {"src": None}}], "refunds": []},
+    {"id": 5008, "name": "#1008", "email": "grace@example.com", "created_at": "2024-02-14T11:00:00+00:00", "financial_status": "paid", "total_price": "55.00", "currency": "GBP", "customer": {"id": 107, "first_name": "Grace", "last_name": "Kim", "email": "grace@example.com"}, "line_items": [{"id": 908, "product_id": 1005, "title": "Handcrafted Ceramic Pour-Over Set", "quantity": 1, "price": "55.00", "handle": "handcrafted-ceramic-pour-over-set", "image": {"src": None}}], "refunds": []},
+    {"id": 5009, "name": "#1009", "email": "henry@example.com", "created_at": "2024-02-20T13:00:00+00:00", "financial_status": "paid", "total_price": "38.00", "currency": "GBP", "customer": {"id": 108, "first_name": "Henry", "last_name": "Evans", "email": "henry@example.com"}, "line_items": [{"id": 909, "product_id": 1007, "title": "HydraFlow 750ml Insulated Water Bottle", "quantity": 1, "price": "38.00", "handle": "hydraflow-750ml", "image": {"src": None}}], "refunds": []},
+    {"id": 5010, "name": "#1010", "email": "iris@example.com", "created_at": "2024-02-25T09:00:00+00:00", "financial_status": "paid", "total_price": "45.00", "currency": "GBP", "customer": {"id": 109, "first_name": "Iris", "last_name": "Clark", "email": "iris@example.com"}, "line_items": [{"id": 910, "product_id": 1010, "title": "Hand-Poured Soy Wax Candle", "quantity": 2, "price": "22.50", "handle": "hand-poured-soy-wax-candle", "image": {"src": None}}], "refunds": []},
+    {"id": 5011, "name": "#1011", "email": "jack@example.com", "created_at": "2024-03-02T14:00:00+00:00", "financial_status": "paid", "total_price": "89.00", "currency": "GBP", "customer": {"id": 110, "first_name": "Jack", "last_name": "White", "email": "jack@example.com"}, "line_items": [{"id": 911, "product_id": 1001, "title": "Premium Merino Wool Crew Neck Sweater", "quantity": 1, "price": "89.00", "handle": "premium-merino-wool-crew-neck-sweater", "image": {"src": None}}], "refunds": []},
+    {"id": 5012, "name": "#1012", "email": "kate@example.com", "created_at": "2024-03-08T10:00:00+00:00", "financial_status": "paid", "total_price": "35.00", "currency": "GBP", "customer": {"id": 111, "first_name": "Kate", "last_name": "Hall", "email": "kate@example.com"}, "line_items": [{"id": 912, "product_id": 1004, "title": "Extra Large Bamboo Cutting Board", "quantity": 1, "price": "35.00", "handle": "extra-large-bamboo-cutting-board", "image": {"src": None}}], "refunds": []},
+    {"id": 5013, "name": "#1013", "email": "liam@example.com", "created_at": "2024-03-10T16:00:00+00:00", "financial_status": "paid", "total_price": "185.00", "currency": "GBP", "customer": {"id": 112, "first_name": "Liam", "last_name": "Young", "email": "liam@example.com"}, "line_items": [{"id": 913, "product_id": 1011, "title": "Recycled Denim Patchwork Jacket", "quantity": 1, "price": "185.00", "handle": "recycled-denim-patchwork-jacket", "image": {"src": None}}], "refunds": []},
+    {"id": 5014, "name": "#1014", "email": "mia@example.com", "created_at": "2024-03-12T11:00:00+00:00", "financial_status": "paid", "total_price": "28.00", "currency": "GBP", "customer": {"id": 113, "first_name": "Mia", "last_name": "Scott", "email": "mia@example.com"}, "line_items": [{"id": 914, "product_id": 1009, "title": "EcoCarry Large Tote Bag", "quantity": 1, "price": "28.00", "handle": "ecocarry-large-tote", "image": {"src": None}}], "refunds": []},
+    {"id": 5015, "name": "#1015", "email": "noah@example.com", "created_at": "2024-03-14T09:00:00+00:00", "financial_status": "paid", "total_price": "45.00", "currency": "GBP", "customer": {"id": 114, "first_name": "Noah", "last_name": "Green", "email": "noah@example.com"}, "line_items": [{"id": 915, "product_id": 1003, "title": "Full-Grain Leather Bifold Wallet", "quantity": 1, "price": "45.00", "handle": "leather-bifold-wallet", "image": {"src": None}}], "refunds": []},
+]

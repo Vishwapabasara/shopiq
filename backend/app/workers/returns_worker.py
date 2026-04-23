@@ -117,9 +117,14 @@ def analyze_returns_task(self: Task, analysis_id: str, shop_domain: str, encrypt
 
 
 async def _analyze_async(analysis_id: str, shop_domain: str, access_token: str, db):
-    logger.info(f"📦 Fetching orders for {shop_domain} (last 90 days)…")
-    orders = await fetch_orders_with_refunds(shop_domain, access_token, days_back=90)
-    logger.info(f"✅ Fetched {len(orders)} orders")
+    if settings.DEV_MODE:
+        from app.dev.mock_data import MOCK_ORDERS
+        orders = MOCK_ORDERS
+        logger.info(f"🧪 DEV MODE: using {len(orders)} mock orders")
+    else:
+        logger.info(f"📦 Fetching orders for {shop_domain} (last 90 days)…")
+        orders = await fetch_orders_with_refunds(shop_domain, access_token, days_back=90)
+        logger.info(f"✅ Fetched {len(orders)} orders")
 
     total_orders = len(orders)
     refunded_orders = [o for o in orders if o.get("refunds")]
