@@ -21,6 +21,7 @@ celery_app = Celery(
         "app.workers.audit_worker",
         "app.workers.returns_worker",
         "app.workers.stock_worker",
+        "app.workers.price_worker",
     ],
 )
 

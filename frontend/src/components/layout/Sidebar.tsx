@@ -76,7 +76,7 @@ const NAV_ECOMMERCE = [
   { to: '/dashboard',          icon: Icons.audit,    label: 'ShopAudit AI',  active: true  },
   { to: '/dashboard/stock',    icon: Icons.stock,    label: 'StockSense',    active: true  },
   { to: '/dashboard/returns',  icon: Icons.returns,  label: 'ReturnRadar',   active: true  },
-  { to: '/dashboard/price',    icon: Icons.price,    label: 'PricePulse',    active: false },
+  { to: '/dashboard/price',    icon: Icons.price,    label: 'PricePulse',    active: true  },
   { to: '/dashboard/copy',     icon: Icons.copy,     label: 'BulkCopy AI',   active: false },
 ]
 

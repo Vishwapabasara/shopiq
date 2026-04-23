@@ -236,6 +236,67 @@ export interface StockAnalysisResults {
   error_message: string | null
 }
 
+// ── Price types ───────────────────────────────────────────────────────────────
+
+export interface CompetitorPrice {
+  competitor: string
+  url: string
+  price: number
+  currency: string
+  availability: 'in_stock' | 'out_of_stock'
+}
+
+export interface PriceProduct {
+  product_id: string
+  title: string
+  handle: string
+  image_url: string | null
+  our_price: number
+  search_query: string
+  competitor_prices: CompetitorPrice[]
+  min_competitor_price: number | null
+  avg_competitor_price: number | null
+  price_gap_pct: number | null
+  suggested_price: number | null
+  status: 'undercut' | 'competitive' | 'overpriced' | 'no_data'
+  competitors_count: number
+}
+
+export interface PriceAnalysisStatus {
+  analysis_id: string
+  status: 'queued' | 'running' | 'complete' | 'failed'
+  total_products: number
+  products_analyzed: number
+  error_message: string | null
+}
+
+export interface PriceAnalysisResults {
+  _id: string
+  total_products: number
+  products_analyzed: number
+  products_undercut: number
+  products_competitive: number
+  products_overpriced: number
+  products_no_data: number
+  avg_price_gap_pct: number
+  currency: string
+  products: PriceProduct[]
+  top_competitors: { name: string; count: number }[]
+  insights: string[]
+  completed_at: string | null
+  serpapi_configured: boolean
+}
+
+export const priceApi = {
+  analyze:  () => api.post<{ analysis_id: string; status: string; message: string }>('/price/analyze'),
+  seedDemo: () => api.post<{ analysis_id: string; status: string; message: string }>('/price/seed-demo'),
+  config:   () => api.get<{ serpapi_configured: boolean }>('/price/config').then(r => r.data),
+  latest:   () => api.get<PriceAnalysisResults | null>('/price/latest').then(r => r.data),
+  status:   (id: string) => api.get<PriceAnalysisStatus>(`/price/${id}/status`).then(r => r.data),
+  results:  (id: string) => api.get<PriceAnalysisResults>(`/price/${id}/results`).then(r => r.data),
+  cancel:   (id: string) => api.post(`/price/${id}/cancel`),
+}
+
 export const stockApi = {
   analyze:  () => api.post<{ analysis_id: string; status: string; message: string }>('/stock/analyze'),
   seedDemo: () => api.post<{ analysis_id: string; status: string; message: string }>('/stock/seed-demo'),

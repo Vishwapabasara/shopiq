@@ -5,6 +5,7 @@ import { Sidebar } from './components/layout/Sidebar'
 import { AuditPage } from './pages/AuditPage'
 import { ReturnsPage } from './pages/ReturnsPage'
 import { StockSensePage } from './pages/StockSensePage'
+import { PricePulsePage } from './pages/PricePulsePage'
 import { LoginPage } from './pages/LoginPage'
 import { ComingSoonPage } from './pages/ComingSoonPage'
 import { PlansPage } from './pages/PlansPage'
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="/dashboard" element={<AuditPage />} />
             <Route path="/dashboard/stock" element={<StockSensePage />} />
             <Route path="/dashboard/returns" element={<ReturnsPage />} />
+            <Route path="/dashboard/price" element={<PricePulsePage />} />
             <Route path="/dashboard/price" element={
               <ComingSoonPage module="PricePulse" icon="◉"
                 description="Daily competitor price monitoring across your catalogue. Alerts when you're undercut and suggests optimal price points based on your margin rules." />
