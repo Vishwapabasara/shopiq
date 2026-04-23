@@ -5,6 +5,7 @@ import inspect
 import logging
 
 from app.dependencies import get_db, get_current_tenant
+from app.config import settings
 
 router = APIRouter(prefix="/returns", tags=["returns"])
 logger = logging.getLogger(__name__)
@@ -141,6 +142,118 @@ async def get_status(analysis_id: str, tenant: dict = Depends(get_current_tenant
         "orders_analyzed": doc.get("orders_analyzed", 0),
         "error_message": doc.get("error_message"),
     }
+
+
+@router.post("/seed-demo")
+async def seed_demo(tenant: dict = Depends(get_current_tenant)):
+    """Insert a pre-computed demo analysis directly into MongoDB (bypasses Celery)."""
+    db = await get_db()
+    now = datetime.utcnow()
+
+    demo_doc = {
+        "tenant_id": str(tenant["_id"]),
+        "shop_domain": tenant["shop_domain"],
+        "status": "complete",
+        "orders_analyzed": 15,
+        "total_refunded": 6,
+        "return_rate": 40.0,
+        "total_refund_value": 312.45,
+        "currency": "USD",
+        "reason_breakdown": {
+            "size_fit": 2,
+            "wrong_item": 1,
+            "damaged": 1,
+            "quality": 1,
+            "not_needed": 1,
+        },
+        "top_returned_products": [
+            {
+                "product_id": "8001",
+                "title": "Classic Slim Fit T-Shirt",
+                "handle": "classic-slim-fit-t-shirt",
+                "image_url": None,
+                "total_orders": 4,
+                "total_returns": 3,
+                "return_rate": 75.0,
+                "refund_value": 89.97,
+                "top_reason": "size_fit",
+            },
+            {
+                "product_id": "8002",
+                "title": "Wireless Noise-Cancelling Headphones",
+                "handle": "wireless-noise-cancelling-headphones",
+                "image_url": None,
+                "total_orders": 3,
+                "total_returns": 2,
+                "return_rate": 66.7,
+                "refund_value": 159.98,
+                "top_reason": "damaged",
+            },
+            {
+                "product_id": "8003",
+                "title": "Premium Leather Wallet",
+                "handle": "premium-leather-wallet",
+                "image_url": None,
+                "total_orders": 5,
+                "total_returns": 1,
+                "return_rate": 20.0,
+                "refund_value": 39.99,
+                "top_reason": "wrong_item",
+            },
+            {
+                "product_id": "8004",
+                "title": "Running Sneakers Pro",
+                "handle": "running-sneakers-pro",
+                "image_url": None,
+                "total_orders": 3,
+                "total_returns": 0,
+                "return_rate": 0.0,
+                "refund_value": 0.0,
+                "top_reason": "other",
+            },
+        ],
+        "flagged_customers": [
+            {
+                "customer_id": "cust_001",
+                "name": "Alice Brown",
+                "email": "alice@example.com",
+                "total_orders": 2,
+                "total_returns": 2,
+                "return_rate": 100.0,
+                "risk_level": "high",
+            },
+            {
+                "customer_id": "cust_002",
+                "name": "Bob Smith",
+                "email": "bob@example.com",
+                "total_orders": 3,
+                "total_returns": 1,
+                "return_rate": 33.3,
+                "risk_level": "medium",
+            },
+        ],
+        "monthly_trend": [
+            {"month": "2025-01", "orders": 4, "returns": 2, "return_rate": 50.0, "refund_value": 109.98},
+            {"month": "2025-02", "orders": 5, "returns": 1, "return_rate": 20.0, "refund_value": 39.99},
+            {"month": "2025-03", "orders": 6, "returns": 3, "return_rate": 50.0, "refund_value": 162.48},
+        ],
+        "insights": [
+            "Return rate of 40.0% is above the e-commerce average — prioritise the top reasons below.",
+            "33% of returns cite size/fit issues — consider adding a size guide to affected product listings.",
+            '"Classic Slim Fit T-Shirt" has the highest return rate at 75.0% (3 of 4 orders).',
+            "2 customer(s) flagged with a return rate above 30% — review their order history for potential abuse.",
+        ],
+        "triggered_by": "demo",
+        "celery_task_id": None,
+        "created_at": now,
+        "completed_at": now,
+        "error_message": None,
+    }
+
+    result = await aw(db.return_analyses.insert_one(demo_doc))
+    analysis_id = str(result.inserted_id)
+    logger.info(f"🌱 Demo analysis {analysis_id} seeded for {tenant['shop_domain']}")
+    return {"analysis_id": analysis_id, "status": "complete", "message": "Demo data loaded"}
 
 
 @router.get("/{analysis_id}/results")

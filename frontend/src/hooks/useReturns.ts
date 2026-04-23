@@ -46,6 +46,16 @@ export function useActiveReturn() {
     },
   })
 
+  const seedDemo = useMutation({
+    mutationFn: () => returnsApi.seedDemo(),
+    onSuccess: (res) => {
+      const id = res.data.analysis_id
+      setActiveId(id)
+      localStorage.setItem('shopiq_active_return', id)
+      qc.invalidateQueries({ queryKey: ['return-history'] })
+    },
+  })
+
   const statusQuery = useQuery({
     queryKey: ['return-status', activeId],
     queryFn: () => returnsApi.status(activeId!),
@@ -66,8 +76,10 @@ export function useActiveReturn() {
     activeId,
     startAnalysis:  () => trigger.mutate(),
     cancelAnalysis: () => activeId && cancel.mutate(activeId),
+    loadDemo:       () => seedDemo.mutate(),
     isCancelling:   cancel.isPending,
     isTriggering:   trigger.isPending,
+    isLoadingDemo:  seedDemo.isPending,
     triggerError:   trigger.error,
     upgradeError,
     clearUpgradeError: () => setUpgradeError(null),

@@ -13,8 +13,10 @@ export function ReturnsPage() {
     activeId,
     startAnalysis,
     cancelAnalysis,
+    loadDemo,
     isCancelling,
     isTriggering,
+    isLoadingDemo,
     triggerError,
     upgradeError,
     clearUpgradeError,
@@ -110,9 +112,18 @@ export function ReturnsPage() {
             title="Analyse your returns"
             description="ReturnRadar scans 90 days of order history to calculate return rates by product, identify repeat returners, and surface actionable insights to reduce refunds."
             action={
-              <button onClick={startAnalysis} disabled={isTriggering} className="btn-primary">
-                {isTriggering ? 'Starting…' : 'Start analysis →'}
-              </button>
+              <div className="flex items-center gap-3 justify-center flex-wrap">
+                <button onClick={startAnalysis} disabled={isTriggering || isLoadingDemo} className="btn-primary">
+                  {isTriggering ? 'Starting…' : 'Start analysis →'}
+                </button>
+                <button
+                  onClick={loadDemo}
+                  disabled={isTriggering || isLoadingDemo}
+                  className="btn-secondary text-xs"
+                >
+                  {isLoadingDemo ? 'Loading…' : 'Load demo data'}
+                </button>
+              </div>
             }
           />
         )}

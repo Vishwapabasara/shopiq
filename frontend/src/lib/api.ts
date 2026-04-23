@@ -177,12 +177,13 @@ export interface ReturnAnalysisResults {
 }
 
 export const returnsApi = {
-  analyze: () => api.post<{ analysis_id: string; status: string; message: string }>('/returns/analyze'),
-  latest:  () => api.get<ReturnAnalysisResults | null>('/returns/latest').then(r => r.data),
-  status:  (id: string) => api.get<ReturnAnalysisStatus>(`/returns/${id}/status`).then(r => r.data),
-  results: (id: string) => api.get<ReturnAnalysisResults>(`/returns/${id}/results`).then(r => r.data),
-  history: () => api.get<{ history: ReturnAnalysisResults[] }>('/returns/history').then(r => r.data),
-  cancel:  (id: string) => api.post(`/returns/${id}/cancel`),
+  analyze:  () => api.post<{ analysis_id: string; status: string; message: string }>('/returns/analyze'),
+  seedDemo: () => api.post<{ analysis_id: string; status: string; message: string }>('/returns/seed-demo'),
+  latest:   () => api.get<ReturnAnalysisResults | null>('/returns/latest').then(r => r.data),
+  status:   (id: string) => api.get<ReturnAnalysisStatus>(`/returns/${id}/status`).then(r => r.data),
+  results:  (id: string) => api.get<ReturnAnalysisResults>(`/returns/${id}/results`).then(r => r.data),
+  history:  () => api.get<{ history: ReturnAnalysisResults[] }>('/returns/history').then(r => r.data),
+  cancel:   (id: string) => api.post(`/returns/${id}/cancel`),
 }
 
 export const auditApi = {
