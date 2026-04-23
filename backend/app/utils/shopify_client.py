@@ -126,3 +126,49 @@ async def get_shop_info(shop: str, access_token: str) -> dict:
         response = await client.get(url, headers=shopify_headers(access_token))
         response.raise_for_status()
         return response.json().get("shop", {})
+
+
+async def fetch_orders_with_refunds(
+    shop: str, access_token: str, days_back: int = 90
+) -> list[dict]:
+    """
+    Fetch all orders from the last N days, including refund details.
+    Returns every order (not just refunded) for accurate return-rate calculation.
+    Requires read_orders scope.
+    """
+    from datetime import timezone, timedelta
+    cutoff = (
+        datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=days_back)
+    ).isoformat()
+
+    orders: list[dict] = []
+    url = f"https://{shop}/admin/api/{SHOPIFY_API_VERSION}/orders.json"
+    params = {
+        "limit": 250,
+        "status": "any",
+        "created_at_min": cutoff,
+        "fields": (
+            "id,name,email,created_at,financial_status,total_price,currency,"
+            "customer,line_items,refunds"
+        ),
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        while url:
+            await asyncio.sleep(0.5)
+            response = await client.get(url, params=params, headers=shopify_headers(access_token))
+
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 2))
+                await asyncio.sleep(retry_after)
+                response = await client.get(url, params=params, headers=shopify_headers(access_token))
+
+            if response.status_code != 200:
+                break
+
+            data = response.json()
+            orders.extend(data.get("orders", []))
+            url = _parse_next_url(response.headers.get("Link", ""))
+            params = {}
+
+    return orders

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { authApi } from './lib/api'
 import { Sidebar } from './components/layout/Sidebar'
 import { AuditPage } from './pages/AuditPage'
+import { ReturnsPage } from './pages/ReturnsPage'
 import { LoginPage } from './pages/LoginPage'
 import { ComingSoonPage } from './pages/ComingSoonPage'
 import { PlansPage } from './pages/PlansPage'
@@ -64,6 +65,7 @@ export default function App() {
 
           <Route element={<DashboardShell />}>
             <Route path="/dashboard" element={<AuditPage />} />
+            <Route path="/dashboard/returns" element={<ReturnsPage />} />
 
             <Route path="/dashboard/returns" element={
               <ComingSoonPage module="ReturnRadar" icon="↩"

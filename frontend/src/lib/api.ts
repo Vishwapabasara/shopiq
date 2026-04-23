@@ -122,6 +122,68 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
 }
 
+// ── Returns types ─────────────────────────────────────────────────────────────
+
+export interface ReturnAnalysisStatus {
+  analysis_id: string
+  status: 'queued' | 'running' | 'complete' | 'failed'
+  orders_analyzed: number
+  error_message: string | null
+}
+
+export interface ReturnProduct {
+  product_id: string
+  title: string
+  handle: string
+  image_url: string | null
+  total_orders: number
+  total_returns: number
+  return_rate: number
+  refund_value: number
+  top_reason: string
+}
+
+export interface FlaggedCustomer {
+  customer_id: string
+  name: string
+  email: string
+  total_orders: number
+  total_returns: number
+  return_rate: number
+  risk_level: 'high' | 'medium' | 'low'
+}
+
+export interface MonthlyTrend {
+  month: string
+  orders: number
+  returns: number
+  return_rate: number
+  refund_value: number
+}
+
+export interface ReturnAnalysisResults {
+  _id: string
+  orders_analyzed: number
+  total_refunded: number
+  return_rate: number
+  total_refund_value: number
+  currency: string
+  reason_breakdown: Record<string, number>
+  top_returned_products: ReturnProduct[]
+  flagged_customers: FlaggedCustomer[]
+  monthly_trend: MonthlyTrend[]
+  insights: string[]
+  completed_at: string
+}
+
+export const returnsApi = {
+  analyze: () => api.post<{ analysis_id: string; status: string; message: string }>('/returns/analyze'),
+  latest:  () => api.get<ReturnAnalysisResults | null>('/returns/latest').then(r => r.data),
+  status:  (id: string) => api.get<ReturnAnalysisStatus>(`/returns/${id}/status`).then(r => r.data),
+  results: (id: string) => api.get<ReturnAnalysisResults>(`/returns/${id}/results`).then(r => r.data),
+  history: () => api.get<{ history: ReturnAnalysisResults[] }>('/returns/history').then(r => r.data),
+}
+
 export const auditApi = {
   run: () => api.post<{ audit_id: string; status: string; message: string }>('/audit/run'),
   status: (id: string) => api.get<AuditStatus>(`/audit/${id}/status`).then(r => r.data),
