@@ -108,13 +108,14 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
 
     <script>
         const shop = '{shop}';
+        const host = '{host or ""}';
         const sessionId = '{session["session_id"]}';
 
         localStorage.setItem('shopiq_session', sessionId);
         localStorage.setItem('shopiq_shop', shop);
 
-        // App Bridge v4 auto-initializes from CDN; navigate to React frontend
-        window.location.href = '{settings.FRONTEND_URL}/dashboard?shop=' + encodeURIComponent(shop) + '&session=' + encodeURIComponent(sessionId);
+        // Pass host so App Bridge v4 can auto-initialize on the React frontend
+        window.location.href = '{settings.FRONTEND_URL}/dashboard?shop=' + encodeURIComponent(shop) + '&host=' + encodeURIComponent(host) + '&session=' + encodeURIComponent(sessionId);
     </script>
 </body>
 </html>

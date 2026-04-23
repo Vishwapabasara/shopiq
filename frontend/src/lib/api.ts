@@ -20,12 +20,16 @@ api.interceptors.request.use(async (config) => {
   try {
     const shopify = (window as any).shopify
     if (shopify?.idToken) {
-      const token = await shopify.idToken()
+      // 3 s timeout — if App Bridge hasn't initialized, fall through to cookie auth
+      const token = await Promise.race([
+        shopify.idToken() as Promise<string>,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+      ])
       config.headers = config.headers ?? {}
       config.headers['Authorization'] = `Bearer ${token}`
     }
   } catch {
-    // Not in embedded context — cookie auth is the fallback
+    // Not in embedded context or App Bridge not ready — cookie auth is the fallback
   }
   return config
 })
