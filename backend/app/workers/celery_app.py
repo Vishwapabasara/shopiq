@@ -17,7 +17,11 @@ celery_app = Celery(
     "shopiq",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.workers.audit_worker"],
+    include=[
+        "app.workers.audit_worker",
+        "app.workers.returns_worker",
+        "app.workers.stock_worker",
+    ],
 )
 
 # Celery configuration
