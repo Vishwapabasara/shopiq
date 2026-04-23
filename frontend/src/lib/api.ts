@@ -186,6 +186,65 @@ export const returnsApi = {
   cancel:   (id: string) => api.post(`/returns/${id}/cancel`),
 }
 
+// ── Stock types ───────────────────────────────────────────────────────────────
+
+export interface StockProduct {
+  product_id: string
+  variant_id: string
+  title: string
+  variant_title: string | null
+  handle: string
+  image_url: string | null
+  sku: string
+  inventory_qty: number
+  units_sold_30d: number
+  units_sold_prev30d: number
+  daily_velocity: number
+  velocity_trend: 'rising' | 'falling' | 'stable'
+  days_to_stockout: number | null
+  price: number
+  revenue_at_risk: number
+  status: 'urgent' | 'healthy' | 'monitor' | 'dead_stock'
+  abc_class: 'A' | 'B' | 'C'
+  reorder_qty: number
+}
+
+export interface StockAnalysisStatus {
+  analysis_id: string
+  status: 'queued' | 'running' | 'complete' | 'failed'
+  total_skus: number
+  error_message: string | null
+}
+
+export interface StockAnalysisResults {
+  _id: string
+  total_skus: number
+  skus_urgent: number
+  skus_healthy: number
+  skus_monitor: number
+  skus_dead_stock: number
+  total_revenue_at_risk: number
+  dead_stock_value: number
+  total_inventory_value: number
+  capital_efficiency: number
+  currency: string
+  avg_days_to_stockout: number
+  products: StockProduct[]
+  insights: string[]
+  orders_analyzed: number
+  completed_at: string | null
+  error_message: string | null
+}
+
+export const stockApi = {
+  analyze:  () => api.post<{ analysis_id: string; status: string; message: string }>('/stock/analyze'),
+  seedDemo: () => api.post<{ analysis_id: string; status: string; message: string }>('/stock/seed-demo'),
+  latest:   () => api.get<StockAnalysisResults | null>('/stock/latest').then(r => r.data),
+  status:   (id: string) => api.get<StockAnalysisStatus>(`/stock/${id}/status`).then(r => r.data),
+  results:  (id: string) => api.get<StockAnalysisResults>(`/stock/${id}/results`).then(r => r.data),
+  cancel:   (id: string) => api.post(`/stock/${id}/cancel`),
+}
+
 export const auditApi = {
   run: () => api.post<{ audit_id: string; status: string; message: string }>('/audit/run'),
   status: (id: string) => api.get<AuditStatus>(`/audit/${id}/status`).then(r => r.data),

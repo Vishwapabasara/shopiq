@@ -136,9 +136,9 @@ async def fetch_orders_with_refunds(
     Returns every order (not just refunded) for accurate return-rate calculation.
     Requires read_orders scope.
     """
-    from datetime import timezone, timedelta
+    from datetime import datetime, timezone, timedelta
     cutoff = (
-        datetime.utcnow().replace(tzinfo=timezone.utc) - timedelta(days=days_back)
+        datetime.now(timezone.utc) - timedelta(days=days_back)
     ).isoformat()
 
     orders: list[dict] = []
@@ -171,4 +171,64 @@ async def fetch_orders_with_refunds(
             url = _parse_next_url(response.headers.get("Link", ""))
             params = {}
 
+    return orders
+
+
+async def fetch_products_for_stock(shop: str, access_token: str) -> list[dict]:
+    """
+    Fetch all active products with variant inventory quantities for stock analysis.
+    Returns product dicts with variants including inventory_quantity.
+    """
+    products: list[dict] = []
+    url = f"https://{shop}/admin/api/{SHOPIFY_API_VERSION}/products.json"
+    params = {
+        "limit": 250,
+        "status": "active",
+        "fields": "id,title,handle,images,variants",
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        while url:
+            await asyncio.sleep(0.5)
+            response = await client.get(url, params=params, headers=shopify_headers(access_token))
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 2))
+                await asyncio.sleep(retry_after)
+                response = await client.get(url, params=params, headers=shopify_headers(access_token))
+            response.raise_for_status()
+            data = response.json()
+            products.extend(data.get("products", []))
+            url = _parse_next_url(response.headers.get("Link", ""))
+            params = {}
+    return products
+
+
+async def fetch_orders_for_stock(shop: str, access_token: str) -> list[dict]:
+    """
+    Fetch the last 60 days of orders (line items only) for velocity calculation.
+    """
+    from datetime import datetime, timezone, timedelta
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=60)).isoformat()
+
+    orders: list[dict] = []
+    url = f"https://{shop}/admin/api/{SHOPIFY_API_VERSION}/orders.json"
+    params = {
+        "limit": 250,
+        "status": "any",
+        "created_at_min": cutoff,
+        "fields": "id,created_at,line_items",
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        while url:
+            await asyncio.sleep(0.5)
+            response = await client.get(url, params=params, headers=shopify_headers(access_token))
+            if response.status_code == 429:
+                retry_after = int(response.headers.get("Retry-After", 2))
+                await asyncio.sleep(retry_after)
+                response = await client.get(url, params=params, headers=shopify_headers(access_token))
+            if response.status_code != 200:
+                break
+            data = response.json()
+            orders.extend(data.get("orders", []))
+            url = _parse_next_url(response.headers.get("Link", ""))
+            params = {}
     return orders
