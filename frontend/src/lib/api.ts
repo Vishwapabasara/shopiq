@@ -182,6 +182,7 @@ export const returnsApi = {
   status:  (id: string) => api.get<ReturnAnalysisStatus>(`/returns/${id}/status`).then(r => r.data),
   results: (id: string) => api.get<ReturnAnalysisResults>(`/returns/${id}/results`).then(r => r.data),
   history: () => api.get<{ history: ReturnAnalysisResults[] }>('/returns/history').then(r => r.data),
+  cancel:  (id: string) => api.post(`/returns/${id}/cancel`),
 }
 
 export const auditApi = {

@@ -12,6 +12,8 @@ export function ReturnsPage() {
   const {
     activeId,
     startAnalysis,
+    cancelAnalysis,
+    isCancelling,
     isTriggering,
     triggerError,
     upgradeError,
@@ -79,7 +81,18 @@ export function ReturnsPage() {
 
         {/* Running */}
         {isRunning && (
-          <ReturnProgress ordersAnalyzed={statusData?.orders_analyzed ?? 0} />
+          <div className="space-y-3">
+            <ReturnProgress ordersAnalyzed={statusData?.orders_analyzed ?? 0} />
+            <div className="flex justify-center">
+              <button
+                onClick={cancelAnalysis}
+                disabled={isCancelling}
+                className="text-xs text-slate-400 hover:text-red-500 transition-colors underline underline-offset-2"
+              >
+                {isCancelling ? 'Cancelling…' : 'Cancel analysis'}
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Failed */}

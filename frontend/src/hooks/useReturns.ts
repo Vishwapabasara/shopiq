@@ -19,6 +19,15 @@ export function useActiveReturn() {
   )
   const [upgradeError, setUpgradeError] = useState<{ reason: string; message: string } | null>(null)
 
+  const cancel = useMutation({
+    mutationFn: (id: string) => returnsApi.cancel(id),
+    onSuccess: () => {
+      setActiveId(null)
+      localStorage.removeItem('shopiq_active_return')
+      qc.invalidateQueries({ queryKey: ['return-status'] })
+    },
+  })
+
   const trigger = useMutation({
     mutationFn: () => returnsApi.analyze(),
     onSuccess: (res) => {
@@ -55,9 +64,11 @@ export function useActiveReturn() {
 
   return {
     activeId,
-    startAnalysis: () => trigger.mutate(),
-    isTriggering: trigger.isPending,
-    triggerError: trigger.error,
+    startAnalysis:  () => trigger.mutate(),
+    cancelAnalysis: () => activeId && cancel.mutate(activeId),
+    isCancelling:   cancel.isPending,
+    isTriggering:   trigger.isPending,
+    triggerError:   trigger.error,
     upgradeError,
     clearUpgradeError: () => setUpgradeError(null),
     statusData,

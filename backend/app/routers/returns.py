@@ -97,6 +97,35 @@ async def get_history(tenant: dict = Depends(get_current_tenant)):
     return {"history": history}
 
 
+@router.post("/{analysis_id}/cancel")
+async def cancel_analysis(analysis_id: str, tenant: dict = Depends(get_current_tenant)):
+    db = await get_db()
+    try:
+        doc = await aw(db.return_analyses.find_one({"_id": ObjectId(analysis_id)}))
+    except Exception:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    if not doc or doc["tenant_id"] != str(tenant["_id"]):
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    if doc["status"] not in ("queued", "running"):
+        return {"status": doc["status"], "message": "Analysis already finished"}
+
+    # Revoke Celery task if we have the ID
+    celery_task_id = doc.get("celery_task_id")
+    if celery_task_id:
+        try:
+            from app.workers.celery_app import celery_app
+            celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
+        except Exception:
+            pass
+
+    await aw(db.return_analyses.update_one(
+        {"_id": ObjectId(analysis_id)},
+        {"$set": {"status": "failed", "error_message": "Cancelled by user"}},
+    ))
+    logger.info(f"🛑 Analysis {analysis_id} cancelled by user")
+    return {"status": "failed", "message": "Analysis cancelled"}
+
+
 @router.get("/{analysis_id}/status")
 async def get_status(analysis_id: str, tenant: dict = Depends(get_current_tenant)):
     db = await get_db()
