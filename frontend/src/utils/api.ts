@@ -1,26 +1,9 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://shopiq-production.up.railway.app';
 
-const getSession = (): string | null => {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('session') || localStorage.getItem('shopiq_session');
-};
-
-export const saveSession = (sessionId: string, shop: string) => {
-  localStorage.setItem('shopiq_session', sessionId);
-  localStorage.setItem('shopiq_shop', shop);
-  console.log('✅ Session saved to localStorage:', sessionId);
-};
-
-export const clearSession = () => {
-  localStorage.removeItem('shopiq_session');
-  localStorage.removeItem('shopiq_shop');
-  console.log('🗑️ Session cleared from localStorage');
-};
-
-export const getShop = (): string | null => {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('shop') || localStorage.getItem('shopiq_shop');
-};
+// Session is managed via the HTTP-only cookie set by the backend during OAuth.
+// Shop is only read from URL params (present during the OAuth redirect moment).
+const getShop = (): string | null =>
+  new URLSearchParams(window.location.search).get('shop');
 
 export const apiClient = {
   get: async (endpoint: string) => {
@@ -34,10 +17,7 @@ export const apiClient = {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        clearSession();
-        window.location.href = '/login';
-      }
+      if (response.status === 401) window.location.href = '/login';
       throw new Error(`API error: ${response.status}`);
     }
 
@@ -57,10 +37,7 @@ export const apiClient = {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        clearSession();
-        window.location.href = '/login';
-      }
+      if (response.status === 401) window.location.href = '/login';
       throw new Error(`API error: ${response.status}`);
     }
 
@@ -74,7 +51,6 @@ export const logout = async () => {
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
-    clearSession();
     window.location.href = '/login';
   }
 };

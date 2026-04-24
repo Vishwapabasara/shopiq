@@ -1,39 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { saveSession } from '../utils/api'
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
-  const [status, setStatus] = useState('Completing authentication...')
-  const called = useRef(false)  // ← prevent double-call in StrictMode
+  const [status] = useState('Completing authentication...')
+  const called = useRef(false)
 
   useEffect(() => {
-    if (called.current) return  // ← prevent double execution
+    if (called.current) return
     called.current = true
 
     const shop = searchParams.get('shop')
-    const session = searchParams.get('session')
-
-    console.log('🔙 OAuth callback received', { shop, session })
 
     if (!shop) {
       setError('Missing shop parameter')
       return
     }
 
-    if (!session) {
-      setError('Missing session parameter')
-      return
-    }
-
-    setStatus('Saving session...')
-    saveSession(session, shop)
-    console.log('✅ Session saved, redirecting to dashboard')
-    setStatus('Redirecting to dashboard...')
-    setTimeout(() => navigate('/dashboard'), 500)
-  }, [])  // ← empty deps, ref handles dedup
+    // The backend set the HTTP-only session cookie during OAuth — navigate directly.
+    navigate('/dashboard', { replace: true })
+  }, [])
 
   if (error) {
     return (
