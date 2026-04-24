@@ -108,17 +108,10 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
             <p>Please wait...</p>
         </div>
     </div>
-
     <script>
-        const shop = '{shop}';
-        const host = '{host or ""}';
-        const sessionId = '{session["session_id"]}';
-
-        localStorage.setItem('shopiq_session', sessionId);
-        localStorage.setItem('shopiq_shop', shop);
-
-        // Pass host so App Bridge v4 can auto-initialize on the React frontend
-        window.location.href = '{settings.FRONTEND_URL}/dashboard?shop=' + encodeURIComponent(shop) + '&host=' + encodeURIComponent(host) + '&session=' + encodeURIComponent(sessionId);
+        // Session is carried by the HTTP-only cookie set during OAuth.
+        // Pass shop and host so App Bridge v4 can auto-initialize.
+        window.location.href = '{settings.FRONTEND_URL}/dashboard?shop=' + encodeURIComponent('{shop}') + '&host=' + encodeURIComponent('{host or ""}');
     </script>
 </body>
 </html>
@@ -147,8 +140,12 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
 </html>
             """)
     
-    # Landing page for direct web access
-    return HTMLResponse(content="""
+    # Landing page for direct web access.
+    # Installation must be initiated from the Shopify App Store — no manual
+    # shop-domain entry is allowed per Shopify App Store requirements.
+    # TODO: replace the href below with the live Shopify App Store listing URL.
+    app_store_url = "https://apps.shopify.com/shopiq"
+    return HTMLResponse(content=f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -156,8 +153,8 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ShopIQ - Shopify Product Auditor</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             justify-content: center;
@@ -165,94 +162,41 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-        }
-        .container { text-align: center; max-width: 600px; padding: 2rem; }
-        h1 { font-size: 3rem; margin-bottom: 1rem; }
-        p { font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9; }
-        .install-form {
+        }}
+        .container {{ text-align: center; max-width: 560px; padding: 2rem; }}
+        h1 {{ font-size: 3rem; margin-bottom: 1rem; }}
+        p {{ font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9; }}
+        .card {{
             background: rgba(255,255,255,0.1);
             padding: 2rem;
             border-radius: 1rem;
             backdrop-filter: blur(10px);
-        }
-        .input-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-        input {
-            padding: 1rem;
-            font-size: 1rem;
-            border: none;
-            border-radius: 0.5rem;
-            flex: 1;
-        }
-        .suffix {
-            padding: 1rem;
-            background: rgba(255,255,255,0.2);
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-        }
-        button {
+        }}
+        .btn {{
+            display: inline-block;
             background: white;
             color: #667eea;
             padding: 1rem 2rem;
             font-size: 1rem;
             font-weight: bold;
-            border: none;
             border-radius: 0.5rem;
-            cursor: pointer;
+            text-decoration: none;
             transition: transform 0.2s;
-            width: 100%;
-        }
-        button:hover { transform: scale(1.02); }
-        .error { color: #ff6b6b; margin-top: 0.5rem; font-size: 0.9rem; }
+        }}
+        .btn:hover {{ transform: scale(1.02); }}
+        .note {{ margin-top: 1rem; font-size: 0.85rem; opacity: 0.75; }}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 ShopIQ</h1>
+        <h1>ShopIQ</h1>
         <p>AI-powered product auditing for Shopify stores</p>
-        
-        <div class="install-form">
-            <h2 style="margin-bottom: 1.5rem;">Install on your store</h2>
-            <div class="input-group">
-                <input 
-                    type="text" 
-                    id="shop-input" 
-                    placeholder="your-store"
-                />
-                <span class="suffix">.myshopify.com</span>
-            </div>
-            <button onclick="install()">Install App</button>
-            <div id="error" class="error"></div>
+        <div class="card">
+            <p style="margin-bottom:1.5rem;">Install ShopIQ directly from the Shopify App Store.</p>
+            <a class="btn" href="{app_store_url}">Add app on Shopify</a>
+            <p class="note">You will be guided through authorisation on the next screen.</p>
         </div>
     </div>
-    
-    <script>
-        function install() {
-            const input = document.getElementById('shop-input');
-            const errorDiv = document.getElementById('error');
-            const shop = input.value.trim();
-            
-            errorDiv.textContent = '';
-            
-            if (!shop) {
-                errorDiv.textContent = 'Please enter your shop name';
-                return;
-            }
-            
-            if (!/^[a-zA-Z0-9][a-zA-Z0-9\\-]*$/.test(shop)) {
-                errorDiv.textContent = 'Invalid shop name. Use only letters, numbers, and hyphens.';
-                return;
-            }
-            
-            const formattedShop = shop.toLowerCase() + '.myshopify.com';
-            window.location.href = '/auth/shopify/install?shop=' + formattedShop;
-        }
-        
-        document.getElementById('shop-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') install();
-        });
-    </script>
 </body>
 </html>
     """)
