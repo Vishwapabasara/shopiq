@@ -140,7 +140,7 @@ async def register_gdpr_webhooks(shop_domain: str, access_token: str) -> dict:
 # ── GET /shopify/install ──────────────────────────────────────────────────────
 
 @router.get("/shopify/install")
-async def install(request: Request, shop: str = Query(...)):
+async def install(request: Request, shop: str = Query(...), host: str = Query(None)):
     logger.info(f"🚀 Install initiated for shop: {shop}")
 
     if not _valid_shop(shop):
@@ -155,6 +155,7 @@ async def install(request: Request, shop: str = Query(...)):
         {"$set": {
             "shop": shop,
             "state": state,
+            "host": host or "",
             "created_at": _now()
         }},
         upsert=True
@@ -192,6 +193,8 @@ async def callback(
     if not stored or stored.get("state") != state:
         logger.error(f"❌ STATE MISMATCH! stored={stored}")
         raise HTTPException(403, "State mismatch — possible CSRF")
+
+    host = stored.get("host") or ""
 
     # Clean up used state
     await aw(db.oauth_states.delete_one({"shop": shop}))
@@ -311,7 +314,7 @@ async def callback(
     logger.info(f"✅ Session created and stored in cookie: {session_id}")
     logger.info(f"✅ OAuth flow completed for {shop}")
 
-    redirect_url = f"{settings.FRONTEND_URL}/auth/callback?shop={shop}&session={session_id}"
+    redirect_url = f"{settings.FRONTEND_URL}/auth/callback?shop={shop}&host={host}"
     logger.info(f"🔄 Redirecting to: {redirect_url}")
     return RedirectResponse(url=redirect_url, status_code=302)
 

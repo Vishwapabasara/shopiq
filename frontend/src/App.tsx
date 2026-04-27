@@ -31,7 +31,20 @@ function AuthGuard() {
   }
 
   if (!data?.authenticated) {
+    const shop =
+      new URLSearchParams(window.location.search).get('shop') ||
+      sessionStorage.getItem('shopiq_shop')
+    if (shop) {
+      // Embedded context: start OAuth rather than showing login page
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://shopiq-production.up.railway.app'
+      window.location.href = `${apiUrl}/auth/shopify/install?shop=${encodeURIComponent(shop)}`
+      return null
+    }
     return <Navigate to="/login" replace />
+  }
+
+  if (import.meta.env.DEV && !new URLSearchParams(window.location.search).get('shop')) {
+    console.warn('[ShopIQ] No ?shop= in URL — App Bridge may not initialize correctly')
   }
 
   return <Outlet />

@@ -1,6 +1,6 @@
 name = "ShopIQ"
 client_id = "7cb3bb3f9bff67af8a8a52125134b745"
-application_url = "https://shopiq-production.up.railway.app"
+application_url = "https://shopiq-iota.vercel.app"
 embedded = true
 
 [access_scopes]
