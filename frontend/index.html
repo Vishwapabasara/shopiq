@@ -10,15 +10,11 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap">
     <meta name="shopify-api-key" content="7cb3bb3f9bff67af8a8a52125134b745" />
     <script>
-      // Runs synchronously during HTML parsing, before any other scripts.
-      // 1. Restores ?shop= / ?host= into the URL (React Router strips them on
-      //    SPA navigation) so App Bridge reads them when it initialises below.
-      // 2. Injects <meta name="shopify-shop"> so App Bridge finds the shop.
-      // 3. Uses document.write() to emit the App Bridge <script> tag inline —
-      //    this makes it a synchronous (non-async, non-defer) blocking script,
-      //    which is what App Bridge v4 requires. It is only emitted when shop
-      //    is known, so standalone visitors (no ?shop=) never load App Bridge
-      //    and the page renders immediately without buffering.
+      // Runs synchronously during HTML parsing, before React mounts.
+      // Restores ?shop= / ?host= from storage so App Bridge finds them,
+      // then loads App Bridge with async=false so it is non-blocking but
+      // document.currentScript.async === false (satisfying App Bridge v4's check).
+      // In standalone mode (no shop) App Bridge is skipped entirely.
       (function () {
         var p = new URLSearchParams(window.location.search);
         var shop = p.get('shop') || '';
@@ -40,10 +36,20 @@
           m.content = shop;
           document.head.appendChild(m);
 
-          // document.write() during initial parsing inserts content into the
-          // HTML stream synchronously — the resulting <script> tag has no
-          // async or defer attribute, satisfying App Bridge's requirement.
-          document.write('<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"><\/script>');
+          var ab = document.createElement('script');
+          ab.src = 'https://cdn.shopify.com/shopifycloud/app-bridge.js';
+          // Setting async=false makes document.currentScript.async === false
+          // when App Bridge reads it — satisfying App Bridge v4's non-async
+          // requirement — without blocking HTML parsing the way a static
+          // <script> tag would.
+          ab.async = false;
+          window.__shopifyAppBridgeReady = new Promise(function (resolve) {
+            ab.onload = resolve;
+            ab.onerror = resolve;
+          });
+          document.head.appendChild(ab);
+        } else {
+          window.__shopifyAppBridgeReady = Promise.resolve();
         }
       })();
     </script>

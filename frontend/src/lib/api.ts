@@ -15,10 +15,15 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// App Bridge is loaded as a static blocking <script> in index.html, so
-// window.shopify.idToken is always available by the time this module runs.
+// Resolves when App Bridge finishes loading (or immediately in standalone mode).
+// Awaiting it prevents the race condition where useQuery fires before
+// window.shopify.idToken is available.
+const appBridgeLoaded: Promise<void> =
+  (window as any).__shopifyAppBridgeReady ?? Promise.resolve()
+
 api.interceptors.request.use(async (config) => {
   try {
+    await appBridgeLoaded
     const shopify = (window as any).shopify
     if (typeof shopify?.idToken === 'function') {
       const token = await shopify.idToken()
