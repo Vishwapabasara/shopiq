@@ -18,3 +18,4 @@ weasyprint==62.3              # PDF generation from HTML
 stripe==9.9.0                 # billing
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+PyJWT

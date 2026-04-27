@@ -324,7 +324,7 @@ async def callback(
 @router.get("/me")
 async def get_current_user(request: Request):
     from app.dependencies import get_current_tenant
-    from app.dependencies.shopify_session import get_current_tenant_from_session_token
+    from app.shopify_session import get_current_tenant_from_session_token
 
     authorization = request.headers.get("authorization", "")
 
