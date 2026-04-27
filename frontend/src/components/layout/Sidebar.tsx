@@ -70,6 +70,13 @@ const Icons = {
       <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
     </svg>
   ),
+  newTab: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+      <polyline points="15 3 21 3 21 9"/>
+      <line x1="10" y1="14" x2="21" y2="3"/>
+    </svg>
+  ),
 }
 
 const NAV_ECOMMERCE = [
@@ -88,6 +95,16 @@ const NAV_OPS = [
   { to: '/dashboard/onboard',  icon: Icons.onboard,  label: 'OnboardKit',    active: false },
 ]
 
+function buildStandaloneUrl() {
+  const shop = sessionStorage.getItem('shopiq_shop') || localStorage.getItem('shopiq_shop')
+  const host = sessionStorage.getItem('shopiq_host') || localStorage.getItem('shopiq_host')
+  const qs = new URLSearchParams()
+  if (shop) qs.set('shop', shop)
+  if (host) qs.set('host', host)
+  const q = qs.toString()
+  return `${window.location.origin}${window.location.pathname}${q ? '?' + q : ''}`
+}
+
 export function Sidebar() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: authApi.me })
   const navigate = useNavigate()
@@ -105,10 +122,17 @@ export function Sidebar() {
       <div className="px-5 py-4 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
           <img src={logo} alt="ShopIQ" className="w-8 h-8 object-contain flex-shrink-0" />
-          <div>
+          <div className="flex-1 min-w-0">
             <span className="font-semibold text-slate-900 tracking-tight text-sm">ShopIQ</span>
             <p className="text-[10px] text-slate-400 leading-tight">Shopify Intelligence</p>
           </div>
+          <button
+            onClick={() => window.open(buildStandaloneUrl(), '_blank', 'noopener,noreferrer')}
+            className="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+            title="Open in new tab"
+          >
+            {Icons.newTab}
+          </button>
         </div>
       </div>
 
