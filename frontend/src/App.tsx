@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { authApi } from './lib/api'
 import { Sidebar } from './components/layout/Sidebar'
@@ -11,6 +11,28 @@ import { ComingSoonPage } from './pages/ComingSoonPage'
 import { PlansPage } from './pages/PlansPage'
 import { Spinner } from './components/ui'
 import { AuthCallback } from './pages/AuthCallback'
+
+// ── Shopify-param-preserving redirect ─────────────────────────────────────────
+// React Router's <Navigate> strips query params. This component copies
+// shop, host (and other Shopify params if present) into the target URL.
+
+function ShopifyNavigate({ to }: { to: string }) {
+  const { search } = useLocation()
+  const current = new URLSearchParams(search)
+  const qs = new URLSearchParams()
+
+  const shop = current.get('shop') || sessionStorage.getItem('shopiq_shop')
+  const host = current.get('host') || sessionStorage.getItem('shopiq_host')
+  if (shop) qs.set('shop', shop)
+  if (host) qs.set('host', host)
+  for (const key of ['hmac', 'timestamp', 'embedded']) {
+    const v = current.get(key)
+    if (v) qs.set(key, v)
+  }
+
+  const q = qs.toString()
+  return <Navigate to={q ? `${to}?${q}` : to} replace />
+}
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 
@@ -31,13 +53,14 @@ function AuthGuard() {
   }
 
   if (!data?.authenticated) {
-    const shop =
-      new URLSearchParams(window.location.search).get('shop') ||
-      sessionStorage.getItem('shopiq_shop')
+    const p = new URLSearchParams(window.location.search)
+    const shop = p.get('shop') || sessionStorage.getItem('shopiq_shop')
+    const host = p.get('host') || sessionStorage.getItem('shopiq_host')
     if (shop) {
-      // Embedded context: start OAuth rather than showing login page
       const apiUrl = import.meta.env.VITE_API_URL || 'https://shopiq-production.up.railway.app'
-      window.location.href = `${apiUrl}/auth/shopify/install?shop=${encodeURIComponent(shop)}`
+      let url = `${apiUrl}/auth/shopify/install?shop=${encodeURIComponent(shop)}`
+      if (host) url += `&host=${encodeURIComponent(host)}`
+      window.location.href = url
       return null
     }
     return <Navigate to="/login" replace />
@@ -112,11 +135,11 @@ export default function App() {
                 description="Branded client onboarding portals. Build drag-and-drop intake flows with file uploads, automated reminders, and kickoff scheduling — no more chasing clients." />
             } />
 
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<ShopifyNavigate to="/dashboard" />} />
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<ShopifyNavigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>
   )
