@@ -33,16 +33,21 @@
           window.history.replaceState({}, '', window.location.pathname + '?' + p.toString());
         }
 
-        // Inject shopify-shop meta so browser console verification passes
+        // Inject shopify-shop meta and load App Bridge only when shop is known.
+        // Standalone visits (no shop) get a clean error page from React instead
+        // of an uncaught App Bridge exception.
         if (shop) {
           var m = document.createElement('meta');
           m.name = 'shopify-shop';
           m.content = shop;
           document.head.appendChild(m);
+
+          var ab = document.createElement('script');
+          ab.src = 'https://cdn.shopify.com/shopifycloud/app-bridge.js';
+          document.head.appendChild(ab);
         }
       })();
     </script>
-    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
   </head>
   <body>
     <div id="root"></div>
