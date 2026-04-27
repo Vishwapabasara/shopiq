@@ -99,6 +99,7 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ShopIQ</title>
+    <meta name="shopify-api-key" content="{settings.SHOPIFY_API_KEY}" />
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
 </head>
 <body>
@@ -110,7 +111,7 @@ async def root(request: Request, shop: str = None, embedded: str = None, host: s
     </div>
     <script>
         // Session is carried by the HTTP-only cookie set during OAuth.
-        // Pass shop and host so App Bridge v4 can auto-initialize.
+        // Pass shop and host so App Bridge v4 can auto-initialize on the React frontend.
         window.location.href = '{settings.FRONTEND_URL}/dashboard?shop=' + encodeURIComponent('{shop}') + '&host=' + encodeURIComponent('{host or ""}');
     </script>
 </body>
