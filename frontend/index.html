@@ -20,13 +20,14 @@
         var shop = p.get('shop') || '';
         var host = p.get('host') || '';
 
-        // Persist whatever arrived in this URL load
-        if (shop) sessionStorage.setItem('shopiq_shop', shop);
-        if (host) sessionStorage.setItem('shopiq_host', host);
+        // Persist to sessionStorage (per-tab) AND localStorage (survives iframe recreation)
+        if (shop) { sessionStorage.setItem('shopiq_shop', shop); localStorage.setItem('shopiq_shop', shop); }
+        if (host) { sessionStorage.setItem('shopiq_host', host); localStorage.setItem('shopiq_host', host); }
 
-        // Restore each param independently if missing from the current URL
-        if (!shop) { var s = sessionStorage.getItem('shopiq_shop'); if (s) { shop = s; p.set('shop', s); } }
-        if (!host) { var h = sessionStorage.getItem('shopiq_host'); if (h) { host = h; p.set('host', h); } }
+        // Restore each param independently — sessionStorage first, then localStorage fallback
+        // localStorage survives browser refresh (new iframe context) where sessionStorage is empty
+        if (!shop) { var s = sessionStorage.getItem('shopiq_shop') || localStorage.getItem('shopiq_shop'); if (s) { shop = s; p.set('shop', s); } }
+        if (!host) { var h = sessionStorage.getItem('shopiq_host') || localStorage.getItem('shopiq_host'); if (h) { host = h; p.set('host', h); } }
 
         if (shop || host) {
           window.history.replaceState({}, '', window.location.pathname + '?' + p.toString());

@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { authApi } from '../../lib/api'
 import { cn } from '../../lib/utils'
@@ -173,9 +173,18 @@ function NavSection({ label, items }: { label: string; items: NavItem[] }) {
 }
 
 function ActiveNavItem({ item }: { item: NavItem }) {
+  const { search } = useLocation()
+  const current = new URLSearchParams(search)
+  const qs = new URLSearchParams()
+  const shop = current.get('shop') || sessionStorage.getItem('shopiq_shop') || localStorage.getItem('shopiq_shop')
+  const host = current.get('host') || sessionStorage.getItem('shopiq_host') || localStorage.getItem('shopiq_host')
+  if (shop) qs.set('shop', shop)
+  if (host) qs.set('host', host)
+  const to = qs.size > 0 ? `${item.to}?${qs.toString()}` : item.to
+
   return (
     <NavLink
-      to={item.to}
+      to={to}
       end
       className={({ isActive }) => cn(
         'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors',

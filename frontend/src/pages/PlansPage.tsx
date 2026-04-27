@@ -16,6 +16,14 @@ export function PlansPage() {
   const [currentPlan, setCurrentPlan] = useState<string>('free')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const toDashboard = () => {
+    const shop = new URLSearchParams(window.location.search).get('shop') || sessionStorage.getItem('shopiq_shop') || localStorage.getItem('shopiq_shop')
+    const host = new URLSearchParams(window.location.search).get('host') || sessionStorage.getItem('shopiq_host') || localStorage.getItem('shopiq_host')
+    const qs = new URLSearchParams()
+    if (shop) qs.set('shop', shop)
+    if (host) qs.set('host', host)
+    navigate(qs.size > 0 ? `/dashboard?${qs.toString()}` : '/dashboard')
+  }
 
   useEffect(() => {
     Promise.all([
@@ -32,12 +40,12 @@ export function PlansPage() {
       if (response.test_mode) {
         alert(`✅ ${response.message}\n\n(Running in test mode — no charges will be made)`)
         setCurrentPlan(planType)
-        navigate('/dashboard')
+        toDashboard()
       } else if (response.confirmation_url) {
         window.top!.location.href = response.confirmation_url
       } else {
         setCurrentPlan(planType)
-        navigate('/dashboard')
+        toDashboard()
       }
     } catch (error: any) {
       console.error('Subscription error:', error)
@@ -58,7 +66,7 @@ export function PlansPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => toDashboard()}
             className="text-sm text-slate-500 hover:text-slate-700 mb-6 inline-flex items-center gap-1"
           >
             ← Back to dashboard
