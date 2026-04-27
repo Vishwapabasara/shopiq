@@ -65,81 +65,38 @@ if settings.DEV_MODE:
 
 # 6. DEFINE ROUTES
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def root(request: Request, shop: str = None, embedded: str = None, host: str = None):
     """
-    Root endpoint - handles Shopify embedded app and landing page
+    Root endpoint - handles Shopify embedded app and landing page.
+    Uses HTTP 302 redirects (not JS redirects) so the browser lands on
+    the final URL in one step — App Bridge CDN needs ?shop=&host= to be
+    present on the very first page parse, before any JS runs.
     """
     logger.info(f"🏠 Root accessed - shop: {shop}, embedded: {embedded}, host: {host}")
-    logger.info(f"🍪 Session data: {dict(request.session) if hasattr(request, 'session') else 'No session'}")
 
     # Shopify embedded app access
     if shop and embedded == "1":
-        from app.dependencies import get_db
         from app.services.session_manager import get_session_by_shop
 
-        db = await get_db()
-
-        # Check if shop has an active session
         session = await get_session_by_shop(shop)
 
         if session:
-            # Shop is authenticated - load app
-            logger.info(f"✅ Shop {shop} has active session, loading app")
+            logger.info(f"✅ Shop {shop} has active session, redirecting to app")
 
-            # Restore session to request cookie
+            # Refresh the server-side session into the cookie so the React
+            # frontend can authenticate via cookie on its first /auth/me call.
             request.session["session_id"] = session["session_id"]
             request.session["shop_domain"] = session["shop_domain"]
             request.session["tenant_id"] = session["tenant_id"]
 
-            return HTMLResponse(content=f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShopIQ</title>
-    <meta name="shopify-api-key" content="{settings.SHOPIFY_API_KEY}" />
-    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-</head>
-<body>
-    <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif">
-        <div style="text-align:center">
-            <h2>Loading ShopIQ...</h2>
-            <p>Please wait...</p>
-        </div>
-    </div>
-    <script>
-        // Session is carried by the HTTP-only cookie set during OAuth.
-        // Pass shop and host so App Bridge v4 can auto-initialize on the React frontend.
-        window.location.href = '{settings.FRONTEND_URL}/dashboard?shop=' + encodeURIComponent('{shop}') + '&host=' + encodeURIComponent('{host or ""}');
-    </script>
-</body>
-</html>
-            """)
+            # HTTP 302 → browser goes straight to the React SPA with the
+            # required App Bridge params already in the URL.
+            frontend_url = f"{settings.FRONTEND_URL}/dashboard?shop={shop}&host={host or ''}"
+            return RedirectResponse(url=frontend_url, status_code=302)
         else:
-            # Shop not authenticated - start OAuth flow
-            logger.info(f"⚠️ Shop {shop} not authenticated, redirecting to OAuth")
-            return HTMLResponse(content=f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>ShopIQ - Install</title>
-</head>
-<body>
-    <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif">
-        <div style="text-align:center">
-            <h2>Installing ShopIQ...</h2>
-            <p>Redirecting to authorization...</p>
-        </div>
-    </div>
-    <script>
-        window.location.href = '/auth/shopify/install?shop={shop}';
-    </script>
-</body>
-</html>
-            """)
+            logger.info(f"⚠️ Shop {shop} not authenticated, starting OAuth")
+            return RedirectResponse(url=f"/auth/shopify/install?shop={shop}", status_code=302)
     
     # Landing page for direct web access.
     # Installation must be initiated from the Shopify App Store — no manual
