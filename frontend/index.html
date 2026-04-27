@@ -44,7 +44,16 @@
 
           var ab = document.createElement('script');
           ab.src = 'https://cdn.shopify.com/shopifycloud/app-bridge.js';
+          // Signal to the API client when App Bridge has finished loading so it
+          // can attach the session token before the first authenticated request.
+          window.__shopifyAppBridgeReady = new Promise(function(resolve) {
+            ab.onload = resolve;
+            ab.onerror = resolve;
+          });
           document.head.appendChild(ab);
+        } else {
+          // Standalone mode — no App Bridge, resolve immediately.
+          window.__shopifyAppBridgeReady = Promise.resolve();
         }
       })();
     </script>

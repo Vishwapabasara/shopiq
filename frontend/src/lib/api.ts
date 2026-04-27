@@ -15,29 +15,26 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Attach Shopify session token when running inside Shopify Admin (embedded app).
-// window.shopify is auto-initialized by the App Bridge CDN script once the
-// <meta name="shopify-api-key"> tag is present in index.html.
+// Promise set by index.html inline script — resolves once App Bridge CDN has
+// loaded (or immediately in standalone mode). Awaiting it prevents the race
+// condition where useQuery fires before window.shopify is available.
+const appBridgeLoaded: Promise<void> =
+  (window as any).__shopifyAppBridgeReady ?? Promise.resolve()
+
 api.interceptors.request.use(async (config) => {
   try {
+    await appBridgeLoaded
     const shopify = (window as any).shopify
-
-    let token: string | null = null
-
     if (typeof shopify?.idToken === 'function') {
-      token = await shopify.idToken()
-    } else if (typeof shopify?.getSessionToken === 'function') {
-      token = await shopify.getSessionToken()
-    }
-
-    if (token) {
-      config.headers = config.headers ?? {}
-      config.headers.Authorization = `Bearer ${token}`
+      const token = await shopify.idToken()
+      if (token) {
+        config.headers = config.headers ?? {}
+        config.headers.Authorization = `Bearer ${token}`
+      }
     }
   } catch (err) {
     console.warn('[ShopIQ] Shopify session token unavailable:', err)
   }
-
   return config
 })
 
