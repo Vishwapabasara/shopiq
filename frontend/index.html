@@ -6,6 +6,28 @@
     <title>ShopIQ — Shopify Intelligence Platform</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="shopify-api-key" content="7cb3bb3f9bff67af8a8a52125134b745" />
+    <script>
+      // App Bridge CDN requires `shop` (and `host`) to be in the URL at the
+      // moment the app-bridge.js script below initialises (synchronously).
+      // Client-side React Router navigation strips query params, so we
+      // persist them in sessionStorage and restore them here before App
+      // Bridge runs.  sessionStorage is per-tab and is not auth data.
+      (function () {
+        var p = new URLSearchParams(window.location.search);
+        var shop = p.get('shop'), host = p.get('host');
+        if (shop) sessionStorage.setItem('shopiq_shop', shop);
+        if (host) sessionStorage.setItem('shopiq_host', host);
+        if (!shop) {
+          var s = sessionStorage.getItem('shopiq_shop');
+          var h = sessionStorage.getItem('shopiq_host');
+          if (s) {
+            p.set('shop', s);
+            if (h) p.set('host', h);
+            window.history.replaceState({}, '', window.location.pathname + '?' + p.toString());
+          }
+        }
+      })();
+    </script>
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
   </head>
   <body>

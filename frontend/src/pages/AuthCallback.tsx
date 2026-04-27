@@ -13,14 +13,18 @@ export function AuthCallback() {
     called.current = true
 
     const shop = searchParams.get('shop')
+    const host = searchParams.get('host')
 
     if (!shop) {
       setError('Missing shop parameter')
       return
     }
 
-    // The backend set the HTTP-only session cookie during OAuth — navigate directly.
-    navigate('/dashboard', { replace: true })
+    // The backend set the HTTP-only session cookie during OAuth.
+    // Carry shop (and host if present) into the URL so App Bridge can initialize.
+    const params = new URLSearchParams({ shop })
+    if (host) params.set('host', host)
+    navigate(`/dashboard?${params.toString()}`, { replace: true })
   }, [])
 
   if (error) {
