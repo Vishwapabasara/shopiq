@@ -323,18 +323,16 @@ async def callback(
 
 @router.get("/me")
 async def get_current_user(request: Request):
-    """Get current authenticated user info"""
     from app.dependencies import get_current_tenant
+    from app.dependencies.shopify_session import get_current_tenant_from_session_token
 
-    logger.info("🔍 /auth/me called")
-    logger.info(f"🍪 Cookies: {dict(request.cookies)}")
-    logger.info(f"📝 Session data: {dict(request.session) if hasattr(request, 'session') else 'No session'}")
-    logger.info(f"🔗 Query params: {dict(request.query_params)}")
+    authorization = request.headers.get("authorization", "")
 
     try:
-        tenant = await get_current_tenant(request)
-
-        logger.info(f"✅ /auth/me authenticated: {tenant['shop_domain']}")
+        if authorization.lower().startswith("bearer "):
+            tenant = await get_current_tenant_from_session_token(request)
+        else:
+            tenant = await get_current_tenant(request)
 
         return {
             "authenticated": True,
@@ -345,14 +343,9 @@ async def get_current_user(request: Request):
             "scope_issue": tenant.get("scope_issue", False),
             "missing_scopes": tenant.get("missing_scopes", []),
         }
-    except HTTPException as e:
-        logger.error(f"❌ /auth/me authentication failed: {e.detail}")
-        raise
-    except Exception as e:
-        logger.error(f"❌ /auth/me unexpected error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
-
+    except Exception:
+        return {"authenticated": False}
 # ── POST /session ─────────────────────────────────────────────────────────────
 
 @router.post("/session")

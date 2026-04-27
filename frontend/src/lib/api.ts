@@ -21,20 +21,23 @@ export const api = axios.create({
 api.interceptors.request.use(async (config) => {
   try {
     const shopify = (window as any).shopify
+
+    let token: string | null = null
+
     if (typeof shopify?.idToken === 'function') {
-      const token = await Promise.race<string>([
-        shopify.idToken(),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('App Bridge idToken timeout')), 3000)
-        ),
-      ])
+      token = await shopify.idToken()
+    } else if (typeof shopify?.getSessionToken === 'function') {
+      token = await shopify.getSessionToken()
+    }
+
+    if (token) {
       config.headers = config.headers ?? {}
-      config.headers['Authorization'] = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`
     }
   } catch (err) {
-    // Not embedded or App Bridge not ready — cookie auth is the fallback.
-    if (import.meta.env.DEV) console.warn('[ShopIQ] Session token unavailable:', err)
+    console.warn('[ShopIQ] Shopify session token unavailable:', err)
   }
+
   return config
 })
 
