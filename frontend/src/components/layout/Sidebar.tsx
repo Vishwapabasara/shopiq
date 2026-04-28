@@ -209,18 +209,23 @@ export function Sidebar() {
       {/* User footer */}
       <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center flex-shrink-0">
-            <span className="text-brand-700 dark:text-brand-300 text-xs font-semibold">{initials}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
-              {me?.shop_name ?? me?.shop_domain}
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 capitalize">{badge.label} plan</p>
-          </div>
+          <NavLink
+            to="/dashboard/account"
+            className="flex items-center gap-2.5 flex-1 min-w-0 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 px-1 py-0.5 -mx-1 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center flex-shrink-0">
+              <span className="text-brand-700 dark:text-brand-300 text-xs font-semibold">{initials}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+                {me?.shop_name ?? me?.shop_domain}
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 capitalize">{badge.label} plan</p>
+            </div>
+          </NavLink>
           <button
             onClick={() => authApi.logout().then(() => navigate('/login'))}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex-shrink-0"
             title="Sign out"
           >
             {Icons.logout}

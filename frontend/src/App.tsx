@@ -11,6 +11,7 @@ import { ComingSoonPage } from './pages/ComingSoonPage'
 import { BulkCopyPage } from './pages/BulkCopyPage'
 import { ReviewReplyPage } from './pages/ReviewReplyPage'
 import { PlansPage } from './pages/PlansPage'
+import { AccountPage } from './pages/AccountPage'
 import { Spinner } from './components/ui'
 import { AuthCallback } from './pages/AuthCallback'
 
@@ -105,6 +106,7 @@ export default function App() {
 
           <Route element={<DashboardShell />}>
             <Route path="/dashboard" element={<AuditPage />} />
+            <Route path="/dashboard/account" element={<AccountPage />} />
             <Route path="/dashboard/stock" element={<StockSensePage />} />
             <Route path="/dashboard/returns" element={<ReturnsPage />} />
             <Route path="/dashboard/price" element={<PricePulsePage />} />
