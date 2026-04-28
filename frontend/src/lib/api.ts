@@ -155,7 +155,14 @@ export interface BillingUsage {
 // ── API calls ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  me: () => api.get<AuthMe>('/auth/me').then(r => r.data),
+  me: () => {
+    const shop =
+      new URLSearchParams(window.location.search).get('shop') ||
+      sessionStorage.getItem('shopiq_shop') ||
+      localStorage.getItem('shopiq_shop')
+    const url = shop ? `/auth/me?shop=${encodeURIComponent(shop)}` : '/auth/me'
+    return api.get<AuthMe>(url).then(r => r.data)
+  },
   logout: () => api.post('/auth/logout'),
 }
 

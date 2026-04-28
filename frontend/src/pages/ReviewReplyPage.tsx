@@ -93,7 +93,7 @@ function ReviewCard({
         </div>
       )}
 
-      <div className="p-4 grid grid-cols-2 gap-5">
+      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* ── Left: Review ── */}
         <div className="space-y-3">
           <div className="flex items-start gap-3">
@@ -257,7 +257,7 @@ function SetupView({ onSeedDemo }: { onSeedDemo: () => void }) {
           AI-generated review responses written in your brand voice. Sentiment-aware, escalation-flagged, and ready to post in one click.
         </p>
 
-        <div className="grid grid-cols-3 gap-3 my-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-8">
           {[
             { icon: '🎭', label: 'Sentiment-Aware', desc: 'Different tone for 5★ praise vs 1★ complaints' },
             { icon: '⚠️', label: 'Escalation Flags', desc: 'Auto-detects refund demands & legal threats' },

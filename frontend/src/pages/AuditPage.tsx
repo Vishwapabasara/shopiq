@@ -57,7 +57,7 @@ export function AuditPage() {
     <div className="flex-1 flex flex-col min-h-screen">
       {/* Scope warning banner */}
       {me?.scope_issue && (me?.missing_scopes?.length ?? 0) > 0 && (
-        <div className="bg-amber-50 border-b border-amber-200 px-8 py-3 flex items-center justify-between">
+        <div className="bg-amber-50 border-b border-amber-200 px-4 md:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-amber-800">
             <span>⚠️</span>
             <span>
@@ -92,9 +92,9 @@ export function AuditPage() {
       )}
 
       {/* Top bar */}
-      <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
         <div>
-          <h1 className="text-base font-semibold text-slate-900">ShopAudit AI</h1>
+          <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">ShopAudit AI</h1>
           <p className="text-xs text-slate-400 mt-0.5">
             {isComplete && statusData?.completed_at
               ? `Last audited ${formatDate(statusData.completed_at)} at ${formatTime(statusData.completed_at)}`
@@ -121,7 +121,7 @@ export function AuditPage() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 px-8 py-6 space-y-5 max-w-6xl mx-auto w-full">
+      <div className="flex-1 px-4 md:px-8 py-6 space-y-5 max-w-6xl mx-auto w-full">
         <UsageMeter />
 
         {/* Error state */}

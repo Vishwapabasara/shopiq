@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, Link } from 'react-router-dom'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { authApi, billingApi } from './lib/api'
 import { adminAuth } from './lib/adminApi'
@@ -67,14 +68,24 @@ function AuthGuard() {
 
   if (!data?.authenticated) {
     const p = new URLSearchParams(window.location.search)
-    const shop = p.get('shop') || sessionStorage.getItem('shopiq_shop')
-    const host = p.get('host') || sessionStorage.getItem('shopiq_host')
+    const shop = p.get('shop') || sessionStorage.getItem('shopiq_shop') || localStorage.getItem('shopiq_shop')
+    const host = p.get('host') || sessionStorage.getItem('shopiq_host') || localStorage.getItem('shopiq_host')
+
     if (shop) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://shopiq-production.up.railway.app'
-      let url = `${apiUrl}/auth/shopify/install?shop=${encodeURIComponent(shop)}`
-      if (host) url += `&host=${encodeURIComponent(host)}`
-      window.location.href = url
-      return null
+      const isEmbedded = window.self !== window.top
+      if (isEmbedded) {
+        // Inside Shopify Admin iframe — full OAuth install
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://shopiq-production.up.railway.app'
+        let url = `${apiUrl}/auth/shopify/install?shop=${encodeURIComponent(shop)}`
+        if (host) url += `&host=${encodeURIComponent(host)}`
+        window.location.href = url
+        return null
+      } else {
+        // Standalone / new tab — session expired; redirect merchant back to
+        // their Shopify Admin so the app can re-authenticate inside the iframe.
+        window.location.href = `https://${shop}/admin`
+        return null
+      }
     }
     return <Navigate to="/login" replace />
   }
@@ -139,10 +150,27 @@ function GlobalBanners() {
 }
 
 function DashboardShell() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
-      <Sidebar />
+      <Sidebar mobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
       <main className="flex-1 flex flex-col min-w-0">
+        {/* Mobile top bar */}
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+            aria-label="Open menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">ShopIQ</span>
+        </div>
         <GlobalBanners />
         <Outlet />
       </main>

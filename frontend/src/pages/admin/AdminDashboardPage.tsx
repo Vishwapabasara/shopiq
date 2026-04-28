@@ -591,7 +591,7 @@ export function AdminDashboardPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Top nav */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between gap-2 overflow-x-auto">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center flex-shrink-0">
               <span className="text-white text-xs font-bold">S</span>
@@ -634,7 +634,7 @@ export function AdminDashboardPage() {
       </nav>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         {tab === 'overview' && <OverviewTab stats={stats} recentEvents={recentEvents} />}
         {tab === 'stores' && <StoresTab />}
         {tab === 'events' && <EventsTab />}

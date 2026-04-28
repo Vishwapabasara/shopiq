@@ -155,7 +155,7 @@ function ProductReviewRow({
       {expanded && (
         <tr className="bg-slate-50/80 border-b border-slate-100">
           <td colSpan={6} className="px-5 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* ── Current ── */}
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Current</p>
@@ -274,7 +274,7 @@ function SetupCard({ onStart }: { onStart: (cfg: { filter_mode: string; max_prod
         </div>
 
         {/* Unique callouts */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           {[
             { icon: '🧬', label: 'Brand Voice Fingerprinting', desc: 'Learns your style from existing products' },
             { icon: '📈', label: 'Score Preview', desc: 'See predicted score before pushing to Shopify' },

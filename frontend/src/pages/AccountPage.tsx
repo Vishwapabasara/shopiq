@@ -163,7 +163,7 @@ export function AccountPage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Top bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
         <div>
           <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">Account</h1>
           <p className="text-xs text-slate-400 mt-0.5">{shop_domain}</p>
@@ -175,17 +175,17 @@ export function AccountPage() {
 
       {/* Global banners */}
       {isPastDue && (
-        <div className="bg-red-500 text-white text-xs font-medium px-8 py-2.5">
+        <div className="bg-red-500 text-white text-xs font-medium px-4 md:px-8 py-2.5">
           Payment failed — your subscription is past due. Please contact support.
         </div>
       )}
       {isTrialActive && (
-        <div className="bg-amber-500 text-white text-xs font-medium px-8 py-2.5">
+        <div className="bg-amber-500 text-white text-xs font-medium px-4 md:px-8 py-2.5">
           Trial active — expires {new Date(subscription.trial_ends_at!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.
         </div>
       )}
 
-      <div className="flex-1 px-8 py-6 max-w-5xl mx-auto w-full space-y-6">
+      <div className="flex-1 px-4 md:px-8 py-6 max-w-5xl mx-auto w-full space-y-6">
 
         {/* ── Row 1: Score progress + stats ───────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

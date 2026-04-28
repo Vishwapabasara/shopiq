@@ -5,7 +5,6 @@ import { cn } from '../../lib/utils'
 import { useTheme } from '../../contexts/ThemeContext'
 import logo from '../../assets/shopiq-lettermark-1200.png'
 
-// ── Inline SVG icons (no extra dependency) ────────────────────────────────────
 const PLAN_BADGE: Record<string, { label: string; cls: string }> = {
   free:       { label: 'Free',       cls: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400' },
   pro:        { label: 'Pro',        cls: 'bg-brand-50 text-brand-600 dark:bg-brand-900 dark:text-brand-400' },
@@ -14,91 +13,21 @@ const PLAN_BADGE: Record<string, { label: string; cls: string }> = {
 }
 
 const Icons = {
-  audit: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-    </svg>
-  ),
-  returns: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="1 4 1 10 7 10"/>
-      <path d="M3.51 15a9 9 0 1 0 .49-3.01"/>
-    </svg>
-  ),
-  stock: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
-    </svg>
-  ),
-  price: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-      <line x1="7" y1="7" x2="7.01" y2="7"/>
-    </svg>
-  ),
-  copy: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-    </svg>
-  ),
-  star: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>
-  ),
-  leads: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-    </svg>
-  ),
-  invoice: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-    </svg>
-  ),
-  contract: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-    </svg>
-  ),
-  onboard: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-      <polyline points="22 4 12 14.01 9 11.01"/>
-    </svg>
-  ),
-  logout: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-      <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-    </svg>
-  ),
-  newTab: (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-      <polyline points="15 3 21 3 21 9"/>
-      <line x1="10" y1="14" x2="21" y2="3"/>
-    </svg>
-  ),
-  moon: (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-  ),
-  sun: (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-    </svg>
-  ),
+  audit: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>),
+  returns: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.01"/></svg>),
+  stock: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>),
+  price: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>),
+  copy: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>),
+  star: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>),
+  leads: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>),
+  invoice: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>),
+  contract: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>),
+  onboard: (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>),
+  logout: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>),
+  newTab: (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>),
+  moon: (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>),
+  sun: (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>),
+  close: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>),
 }
 
 const NAV_ECOMMERCE = [
@@ -127,7 +56,12 @@ function buildStandaloneUrl() {
   return `${window.location.origin}${window.location.pathname}${q ? '?' + q : ''}`
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean
+  onMobileClose?: () => void
+}
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: authApi.me })
   const { data: usageData } = useQuery({
     queryKey: ['billing-usage'],
@@ -138,17 +72,13 @@ export function Sidebar() {
   const { theme, toggle } = useTheme()
 
   const initials = (me?.shop_name ?? 'SQ')
-    .split(' ')
-    .map((w: string) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+    .split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
 
   const plan = (me?.plan ?? 'free') as string
   const badge = PLAN_BADGE[plan] ?? PLAN_BADGE.free
 
-  return (
-    <aside className="w-56 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-screen sticky top-0">
+  const sidebarContent = (
+    <aside className="w-56 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2.5">
@@ -158,20 +88,18 @@ export function Sidebar() {
             <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">Shopify Intelligence</p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={toggle}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
+            <button onClick={toggle} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
               {theme === 'dark' ? Icons.sun : Icons.moon}
             </button>
-            <button
-              onClick={() => window.open(buildStandaloneUrl(), '_blank', 'noopener,noreferrer')}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              title="Open in new tab"
-            >
+            <button onClick={() => window.open(buildStandaloneUrl(), '_blank', 'noopener,noreferrer')} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors hidden lg:block" title="Open in new tab">
               {Icons.newTab}
             </button>
+            {/* Close button — mobile only */}
+            {onMobileClose && (
+              <button onClick={onMobileClose} className="lg:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors ml-1">
+                {Icons.close}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -191,8 +119,8 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
-        <NavSection label="E-commerce" items={NAV_ECOMMERCE} />
-        <NavSection label="Operations" items={NAV_OPS} />
+        <NavSection label="E-commerce" items={NAV_ECOMMERCE} onNavClick={onMobileClose} />
+        <NavSection label="Operations" items={NAV_OPS} onNavClick={onMobileClose} />
       </nav>
 
       {/* Usage quick-view for free plan */}
@@ -211,6 +139,7 @@ export function Sidebar() {
         <div className="flex items-center gap-2.5">
           <NavLink
             to="/dashboard/account"
+            onClick={onMobileClose}
             className="flex items-center gap-2.5 flex-1 min-w-0 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 px-1 py-0.5 -mx-1 transition-colors"
           >
             <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center flex-shrink-0">
@@ -234,6 +163,34 @@ export function Sidebar() {
       </div>
     </aside>
   )
+
+  return (
+    <>
+      {/* Desktop: always visible */}
+      <div className="hidden lg:flex h-screen sticky top-0">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile: slide-in drawer */}
+      <div className={cn(
+        'lg:hidden fixed inset-0 z-40 transition-all duration-200',
+        mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'
+      )}>
+        {/* Backdrop */}
+        <div
+          className={cn('absolute inset-0 bg-black/50 transition-opacity duration-200', mobileOpen ? 'opacity-100' : 'opacity-0')}
+          onClick={onMobileClose}
+        />
+        {/* Drawer */}
+        <div className={cn(
+          'absolute inset-y-0 left-0 h-full transition-transform duration-200',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}>
+          {sidebarContent}
+        </div>
+      </div>
+    </>
+  )
 }
 
 function QuickUsageRow({ label, used, limit }: { label: string; used: number; limit: number }) {
@@ -254,16 +211,14 @@ function QuickUsageRow({ label, used, limit }: { label: string; used: number; li
 
 type NavItem = { to: string; icon: React.ReactNode; label: string; active: boolean }
 
-function NavSection({ label, items }: { label: string; items: NavItem[] }) {
+function NavSection({ label, items, onNavClick }: { label: string; items: NavItem[]; onNavClick?: () => void }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-1.5">
-        {label}
-      </p>
+      <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-1.5">{label}</p>
       <div className="space-y-0.5">
         {items.map(item => (
           item.active
-            ? <ActiveNavItem key={item.to} item={item} />
+            ? <ActiveNavItem key={item.to} item={item} onNavClick={onNavClick} />
             : <ComingSoonItem key={item.to} item={item} />
         ))}
       </div>
@@ -271,7 +226,7 @@ function NavSection({ label, items }: { label: string; items: NavItem[] }) {
   )
 }
 
-function ActiveNavItem({ item }: { item: NavItem }) {
+function ActiveNavItem({ item, onNavClick }: { item: NavItem; onNavClick?: () => void }) {
   const { search } = useLocation()
   const current = new URLSearchParams(search)
   const qs = new URLSearchParams()
@@ -285,6 +240,7 @@ function ActiveNavItem({ item }: { item: NavItem }) {
     <NavLink
       to={to}
       end
+      onClick={onNavClick}
       className={({ isActive }) => cn(
         'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors',
         isActive
@@ -303,9 +259,7 @@ function ComingSoonItem({ item }: { item: NavItem }) {
     <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-slate-400 dark:text-slate-600 cursor-default">
       <span className="flex-shrink-0 w-4 flex items-center justify-center">{item.icon}</span>
       <span>{item.label}</span>
-      <span className="ml-auto text-[9px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded border border-amber-100 dark:border-amber-800">
-        Soon
-      </span>
+      <span className="ml-auto text-[9px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded border border-amber-100 dark:border-amber-800">Soon</span>
     </div>
   )
 }
