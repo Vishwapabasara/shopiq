@@ -105,8 +105,8 @@ async def create_subscription(
     old_price = PLANS.get(tenant.get("plan", "free"), PLANS["free"])["price"]
     db = await get_db()
 
-    # ── Test / dev mode ────────────────────────────────────────────────────────
-    if settings.DEV_MODE:
+    # ── Bypass Shopify billing (DEV_MODE or BILLING_ENABLED=False) ───────────────
+    if settings.DEV_MODE or not settings.BILLING_ENABLED:
         plan_config = PLANS[plan_type]
         trial_days = plan_config.get("trial_days", 0)
         now = datetime.utcnow()
@@ -146,10 +146,11 @@ async def create_subscription(
                 "activated_on": now,
             }}
         ))
+        bypass_reason = "dev_mode" if settings.DEV_MODE else "billing_disabled"
         await _log_subscription_event(
             db, str(tenant["_id"]), "plan_upgraded",
             tenant.get("plan"), plan_type, plan_config["price"],
-            {"test_mode": True}
+            {bypass_reason: True}
         )
         return {
             "success": True,

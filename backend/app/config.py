@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     # Dev mode — set to false in production
     DEV_MODE: bool = False
 
+    # Set to False to bypass Shopify billing (manual DB upgrades only).
+    # Required when app is a Custom App (not a Partners app) — custom apps
+    # cannot call appSubscriptionCreate. Set BILLING_ENABLED=true once the
+    # app is migrated to the Shopify Partners dashboard.
+    BILLING_ENABLED: bool = False
+
     # Logging
     LOG_LEVEL: str = "INFO"
 
