@@ -14,6 +14,16 @@ interface Achievement {
   id: string; title: string; description: string; icon: string; unlocked: boolean
 }
 
+interface Subscription {
+  status: string
+  trial_ends_at: string | null
+  cancel_at_period_end: boolean
+  shopify_charge_id: string | null
+  current_period_end: string | null
+  pending_downgrade_plan: string | null
+  pending_downgrade_at: string | null
+}
+
 interface ProfileData {
   shop_name: string; shop_domain: string; shop_email: string; installed_at: string | null
   plan: string
@@ -22,7 +32,7 @@ interface ProfileData {
     audits_per_month: number; copy_generations_per_month: number
     ai_fixes_per_month: number; audit_batch_size: number; features: string[]
   }
-  subscription: { status: string; trial_ends_at: string | null; cancel_at_period_end: boolean; shopify_charge_id: string | null }
+  subscription: Subscription
   usage: { audits_used: number; copy_generations_used: number; ai_fixes_used: number; period_start: string | null }
   limits: { audits_per_month: number; copy_generations_per_month: number; ai_fixes_per_month: number }
   audit_stats: { total_completed: number; best_score: number | null; latest_score: number | null; first_score: number | null; score_improvement: number | null; total_copy_sessions: number }
@@ -31,11 +41,25 @@ interface ProfileData {
   scan_state: { total_products: number; cursor: number }
 }
 
+interface BillingPreview {
+  from_plan: string; to_plan: string
+  is_upgrade: boolean; is_downgrade: boolean; is_same_plan: boolean
+  trial_days: number; trial_ends_at: string | null
+  first_charge_date: string | null; first_charge_amount: number
+  charge_today: number; credit: number; new_plan_prorated: number; days_remaining: number
+  effective_immediately: boolean; effective_date: string | null; days_until_effective: number
+  features_lost: string[]; features_gained: string[]; usage_warnings: string[]
+  new_plan_price: number; new_plan_name: string
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function scoreColor(s: number) {
   return s >= 75 ? 'text-emerald-600 dark:text-emerald-400' : s >= 50 ? 'text-amber-500' : 'text-red-500'
 }
+
+const PLAN_NAMES: Record<string, string> = { free: 'Free', pro: 'Pro', enterprise: 'Enterprise' }
+const PLAN_PRICES: Record<string, string> = { free: 'Free forever', pro: '$29/month', enterprise: '$199/month' }
 
 function MiniScoreRing({ score, size = 80 }: { score: number; size?: number }) {
   const sw = 6
@@ -79,12 +103,155 @@ const PLAN_STYLE: Record<string, { badge: string; button: string }> = {
   enterprise: { badge: 'bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300', button: 'bg-slate-900 dark:bg-purple-700 text-white hover:bg-slate-800 dark:hover:bg-purple-600' },
 }
 
+// ── Billing Preview Modal ─────────────────────────────────────────────────────
+
+function BillingPreviewModal({
+  preview,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  preview: BillingPreview
+  onConfirm: () => void
+  onCancel: () => void
+  loading: boolean
+}) {
+  const isUpgrade = preview.is_upgrade
+  const isDowngrade = preview.is_downgrade
+  const fromName = PLAN_NAMES[preview.from_plan] ?? preview.from_plan
+  const toName = preview.new_plan_name
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md">
+        <div className="p-6">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">
+            {isUpgrade ? 'Upgrade to' : isDowngrade ? 'Downgrade to' : 'Switch to'} {toName}
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+            {fromName} → {toName} · {PLAN_PRICES[preview.to_plan] ?? `$${preview.new_plan_price}/mo`}
+          </p>
+
+          {/* Trial */}
+          {preview.trial_days > 0 && (
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 mb-4">
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                {preview.trial_days}-day free trial included
+              </p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                First charge on {preview.trial_ends_at} · ${preview.first_charge_amount}/mo after
+              </p>
+            </div>
+          )}
+
+          {/* Proration (upgrade paid→paid) */}
+          {isUpgrade && !preview.trial_days && preview.credit > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4 space-y-1.5">
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide mb-2">Billing today</p>
+              <ProrRow label={`Unused ${fromName} credit (${preview.days_remaining} days)`} value={`-$${preview.credit}`} className="text-emerald-600 dark:text-emerald-400" />
+              <ProrRow label={`${toName} prorated (${preview.days_remaining} days)`} value={`$${preview.new_plan_prorated}`} />
+              <div className="border-t border-blue-200 dark:border-blue-700 pt-1.5 mt-1">
+                <ProrRow label="Charged today" value={`$${preview.charge_today}`} bold />
+              </div>
+            </div>
+          )}
+
+          {/* Downgrade timing */}
+          {isDowngrade && (
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                Downgrade scheduled for {preview.effective_date}
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                You keep {fromName} access for the remaining {preview.days_until_effective} days. No refund.
+              </p>
+            </div>
+          )}
+
+          {/* Features gained */}
+          {preview.features_gained.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">You'll gain</p>
+              <ul className="space-y-1">
+                {preview.features_gained.map((f, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                    <span className="text-emerald-500 flex-shrink-0 mt-0.5">+</span>{f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Features lost */}
+          {preview.features_lost.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">You'll lose access to</p>
+              <ul className="space-y-1">
+                {preview.features_lost.map((f, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                    <span className="text-red-500 flex-shrink-0 mt-0.5">−</span>{f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Usage warnings */}
+          {preview.usage_warnings.length > 0 && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 mb-4">
+              {preview.usage_warnings.map((w, i) => (
+                <p key={i} className="text-xs text-red-600 dark:text-red-400">{w}</p>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-2">
+            <button
+              onClick={onCancel}
+              disabled={loading}
+              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className={cn(
+                'flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2',
+                isDowngrade
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                  : 'bg-brand-600 hover:bg-brand-700 text-white'
+              )}
+            >
+              {loading && <Spinner size={14} className="text-white" />}
+              {isDowngrade ? `Downgrade to ${toName}` : `Upgrade to ${toName}`}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProrRow({ label, value, bold, className }: { label: string; value: string; bold?: boolean; className?: string }) {
+  return (
+    <div className="flex justify-between text-xs">
+      <span className={cn('text-slate-600 dark:text-slate-300', bold && 'font-semibold')}>{label}</span>
+      <span className={cn('font-mono', bold && 'font-bold text-slate-900 dark:text-slate-100', className)}>{value}</span>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function AccountPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const [subscribing, setSubscribing] = useState(false)
+  const [previewPlan, setPreviewPlan] = useState<string | null>(null)
+  const [preview, setPreview] = useState<BillingPreview | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [cancellingDowngrade, setCancellingDowngrade] = useState(false)
 
   const { data, isLoading } = useQuery<ProfileData>({
     queryKey: ['account-profile'],
@@ -92,24 +259,57 @@ export function AccountPage() {
     staleTime: 30_000,
   })
 
-  const handlePlanChange = async (planKey: string) => {
-    if (planKey === data?.plan) return
-    setSubscribing(true)
+  const openPreview = async (planKey: string) => {
+    if (planKey === data?.plan || previewLoading) return
+    setPreviewLoading(true)
+    setPreviewPlan(planKey)
     try {
-      const res = await api.post<{ test_mode?: boolean; message?: string; confirmation_url?: string }>(
-        `/billing/subscribe/${planKey}`
-      ).then(r => r.data)
-      if (res.test_mode) {
-        await qc.invalidateQueries({ queryKey: ['me'] })
-        await qc.invalidateQueries({ queryKey: ['account-profile'] })
-        await qc.invalidateQueries({ queryKey: ['billing-usage'] })
-      } else if (res.confirmation_url) {
+      const res = await api.get<BillingPreview>(`/billing/preview?plan=${planKey}`).then(r => r.data)
+      setPreview(res)
+    } catch (e) {
+      console.error(e)
+      setPreviewPlan(null)
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const confirmPlanChange = async () => {
+    if (!previewPlan) return
+    setConfirming(true)
+    try {
+      const res = await api.post<{
+        test_mode?: boolean; scheduled?: boolean; message?: string
+        confirmation_url?: string; effective_date?: string
+      }>(`/billing/subscribe/${previewPlan}`).then(r => r.data)
+
+      if (res.confirmation_url) {
         window.top!.location.href = res.confirmation_url
+        return
       }
+      // Test mode or scheduled downgrade — just refresh
+      await qc.invalidateQueries({ queryKey: ['me'] })
+      await qc.invalidateQueries({ queryKey: ['account-profile'] })
+      await qc.invalidateQueries({ queryKey: ['billing-usage'] })
     } catch (e) {
       console.error(e)
     } finally {
-      setSubscribing(false)
+      setConfirming(false)
+      setPreviewPlan(null)
+      setPreview(null)
+    }
+  }
+
+  const cancelDowngrade = async () => {
+    setCancellingDowngrade(true)
+    try {
+      await api.post('/billing/cancel-downgrade')
+      await qc.invalidateQueries({ queryKey: ['account-profile'] })
+      await qc.invalidateQueries({ queryKey: ['billing-usage'] })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setCancellingDowngrade(false)
     }
   }
 
@@ -142,8 +342,29 @@ export function AccountPage() {
   const unlockedCount = achievements.filter(a => a.unlocked).length
   const planStyle = PLAN_STYLE[plan] ?? PLAN_STYLE.free
 
+  const hasPendingDowngrade = !!subscription.pending_downgrade_plan
+  const pendingDowngradeName = subscription.pending_downgrade_plan
+    ? (PLAN_NAMES[subscription.pending_downgrade_plan] ?? subscription.pending_downgrade_plan)
+    : null
+
+  const isTrialActive = subscription.status === 'trial' && !!subscription.trial_ends_at
+  const trialDaysLeft = isTrialActive
+    ? Math.max(0, Math.ceil((new Date(subscription.trial_ends_at!).getTime() - Date.now()) / 86400000))
+    : 0
+  const isPastDue = subscription.status === 'past_due'
+
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Billing Preview Modal */}
+      {preview && previewPlan && (
+        <BillingPreviewModal
+          preview={preview}
+          onConfirm={confirmPlanChange}
+          onCancel={() => { setPreview(null); setPreviewPlan(null) }}
+          loading={confirming}
+        />
+      )}
+
       {/* Top bar */}
       <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div>
@@ -154,6 +375,36 @@ export function AccountPage() {
           {plan_config.name} plan
         </span>
       </div>
+
+      {/* Global banners */}
+      {isPastDue && (
+        <div className="bg-red-500 text-white text-xs font-medium px-8 py-2.5 flex items-center justify-between">
+          <span>Payment failed — your subscription is past due. Features may be restricted soon.</span>
+        </div>
+      )}
+      {isTrialActive && trialDaysLeft <= 3 && (
+        <div className="bg-amber-500 text-white text-xs font-medium px-8 py-2.5">
+          Your trial ends in {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''}. Add payment info in Shopify to keep access.
+        </div>
+      )}
+      {hasPendingDowngrade && (
+        <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 px-8 py-2.5 flex items-center justify-between">
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            Downgrade to <strong>{pendingDowngradeName}</strong> scheduled for{' '}
+            {subscription.pending_downgrade_at
+              ? new Date(subscription.pending_downgrade_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'end of billing period'
+            }. You keep current access until then.
+          </p>
+          <button
+            onClick={cancelDowngrade}
+            disabled={cancellingDowngrade}
+            className="ml-4 flex-shrink-0 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline disabled:opacity-50"
+          >
+            {cancellingDowngrade ? 'Cancelling…' : 'Cancel downgrade'}
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 px-8 py-6 max-w-5xl mx-auto w-full space-y-6">
 
@@ -310,9 +561,9 @@ export function AccountPage() {
                   {plan_config.price === 0 ? 'Free forever' : `$${plan_config.price}/month`}
                 </span>
               </div>
-              {subscription.status === 'trial' && subscription.trial_ends_at && (
+              {isTrialActive && (
                 <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
-                  Trial ends {new Date(subscription.trial_ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  Trial ends {new Date(subscription.trial_ends_at!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               )}
             </div>
@@ -332,31 +583,41 @@ export function AccountPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {(['free', 'pro', 'enterprise'] as const).map(pk => {
-              const isCurrent = pk === plan
+              const isCurrent = pk === plan && !hasPendingDowngrade
+              const isPending = hasPendingDowngrade && pk === subscription.pending_downgrade_plan
               const ps = PLAN_STYLE[pk]
-              const prices: Record<string, string> = { free: 'Free', pro: '$29/mo', enterprise: '$199/mo' }
-              const labels: Record<string, string> = { free: 'Free', pro: 'Pro', enterprise: 'Enterprise' }
+              const loading = previewLoading && previewPlan === pk
               return (
                 <button
                   key={pk}
-                  onClick={() => handlePlanChange(pk)}
-                  disabled={subscribing || isCurrent}
+                  onClick={() => openPreview(pk)}
+                  disabled={previewLoading || isCurrent || isPending}
                   className={cn(
-                    'w-full py-3 px-4 rounded-xl text-sm font-semibold border transition-all',
+                    'w-full py-3 px-4 rounded-xl text-sm font-semibold border transition-all relative',
                     isCurrent
                       ? 'border-transparent ring-2 ring-brand-500 cursor-default ' + ps.badge
+                      : isPending
+                      ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 cursor-default text-amber-700 dark:text-amber-300'
                       : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-brand-400 dark:hover:border-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                   )}
                 >
-                  <div className="font-semibold">{labels[pk]}</div>
-                  <div className="text-xs mt-0.5 opacity-70">{prices[pk]}</div>
+                  {loading && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <Spinner size={16} />
+                    </span>
+                  )}
+                  <div className={cn('font-semibold', loading && 'opacity-0')}>{PLAN_NAMES[pk]}</div>
+                  <div className={cn('text-xs mt-0.5 opacity-70', loading && 'opacity-0')}>
+                    {pk === 'free' ? 'Free' : pk === 'pro' ? '$29/mo' : '$199/mo'}
+                  </div>
                   {isCurrent && <div className="text-[10px] mt-1 opacity-60">Current</div>}
+                  {isPending && <div className="text-[10px] mt-1 opacity-70">Pending downgrade</div>}
                 </button>
               )
             })}
           </div>
 
-          {plan !== 'free' && subscription.shopify_charge_id && (
+          {plan !== 'free' && subscription.shopify_charge_id && !hasPendingDowngrade && (
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">
               Billing is managed through Shopify. To cancel, select the Free plan above.
             </p>

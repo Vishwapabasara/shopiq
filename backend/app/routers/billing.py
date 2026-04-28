@@ -11,6 +11,10 @@ from app.services.billing import (
     activate_charge,
     cancel_subscription,
     get_current_charge,
+    preview_plan_change,
+    schedule_downgrade,
+    cancel_scheduled_downgrade,
+    _log_subscription_event,
 )
 from app.config import PLANS, settings
 
@@ -30,6 +34,17 @@ async def get_plans():
     return {"plans": PLANS}
 
 
+@router.get("/preview")
+async def preview_subscription_change(
+    plan: str = Query(..., description="Target plan key: free, pro, enterprise"),
+    tenant: dict = Depends(get_current_tenant),
+):
+    """Preview billing impact of a plan change before confirming."""
+    if plan not in PLANS:
+        raise HTTPException(400, "Invalid plan")
+    return preview_plan_change(tenant, plan)
+
+
 @router.get("/usage")
 async def get_usage(tenant: dict = Depends(get_current_tenant)):
     """Get current usage and limits for all modules"""
@@ -39,6 +54,8 @@ async def get_usage(tenant: dict = Depends(get_current_tenant)):
     plan = PLANS.get(plan_type, PLANS["free"])
     usage = tenant.get("usage", {})
     scan_state = tenant.get("scan_state", {})
+
+    pending_at = tenant.get("pending_downgrade_at")
 
     return {
         "plan": plan_type,
@@ -67,6 +84,9 @@ async def get_usage(tenant: dict = Depends(get_current_tenant)):
             "status": tenant.get("subscription_status", "active"),
             "trial_ends_at": tenant.get("trial_ends_at"),
             "cancel_at_period_end": tenant.get("cancel_at_period_end", False),
+            "current_period_end": tenant.get("current_period_end"),
+            "pending_downgrade_plan": tenant.get("pending_downgrade_plan"),
+            "pending_downgrade_at": pending_at.isoformat() if pending_at else None,
         },
     }
 
@@ -76,29 +96,61 @@ async def create_subscription(
     plan_type: str,
     tenant: dict = Depends(get_current_tenant)
 ):
-    """Create a subscription for a plan"""
+    """Create or schedule a subscription change."""
     if plan_type not in PLANS:
         raise HTTPException(400, "Invalid plan type")
 
-    # Test mode: bypass Shopify billing and activate plan directly
+    preview = preview_plan_change(tenant, plan_type)
+    is_downgrade = preview["is_downgrade"]
+    old_price = PLANS.get(tenant.get("plan", "free"), PLANS["free"])["price"]
+    db = await get_db()
+
+    # ── Test / dev mode ────────────────────────────────────────────────────────
     if settings.DEV_MODE:
-        logger.info(f"🧪 TEST MODE: Bypassing Shopify billing for {tenant['shop_domain']} → {plan_type}")
         plan_config = PLANS[plan_type]
         trial_days = plan_config.get("trial_days", 0)
-        trial_ends_at = datetime.utcnow() + timedelta(days=trial_days) if trial_days > 0 else None
+        now = datetime.utcnow()
 
-        db = await get_db()
+        if is_downgrade:
+            # Schedule the downgrade for period end (estimated)
+            activated = tenant.get("activated_on") or now
+            if isinstance(activated, str):
+                try:
+                    activated = datetime.fromisoformat(activated.replace("Z", "+00:00")).replace(tzinfo=None)
+                except Exception:
+                    activated = now
+            period_end = tenant.get("current_period_end") or (activated + timedelta(days=30))
+            await schedule_downgrade(tenant["_id"], plan_type, period_end)
+            await _log_subscription_event(
+                db, str(tenant["_id"]), "downgrade_scheduled",
+                tenant.get("plan"), plan_type, 0.0,
+                {"period_end": period_end.isoformat(), "test_mode": True}
+            )
+            return {
+                "success": True,
+                "test_mode": True,
+                "scheduled": True,
+                "plan": plan_type,
+                "effective_date": period_end.date().isoformat(),
+                "message": f"Downgrade to {plan_config['name']} scheduled for {period_end.date()}."
+            }
+
+        trial_ends_at = now + timedelta(days=trial_days) if trial_days > 0 else None
         await aw(db.tenants.update_one(
             {"_id": tenant["_id"]},
             {"$set": {
                 "plan": plan_type,
                 "subscription_status": "trial" if trial_days > 0 else "active",
                 "trial_ends_at": trial_ends_at,
-                "shopify_charge_id": f"test_charge_{plan_type}_{int(datetime.utcnow().timestamp())}",
-                "activated_on": datetime.utcnow(),
+                "shopify_charge_id": f"test_charge_{plan_type}_{int(now.timestamp())}",
+                "activated_on": now,
             }}
         ))
-        logger.info(f"✅ Test subscription activated: {tenant['shop_domain']} → {plan_type}")
+        await _log_subscription_event(
+            db, str(tenant["_id"]), "plan_upgraded",
+            tenant.get("plan"), plan_type, plan_config["price"],
+            {"test_mode": True}
+        )
         return {
             "success": True,
             "test_mode": True,
@@ -108,13 +160,39 @@ async def create_subscription(
             "redirect_url": None
         }
 
-    if plan_type == "free":
-        db = await get_db()
-        await aw(db.tenants.update_one(
-            {"_id": tenant["_id"]},
-            {"$set": {"plan": "free", "subscription_status": "active", "shopify_charge_id": None}}
-        ))
-        return {"success": True, "plan": "free"}
+    # ── Production ─────────────────────────────────────────────────────────────
+    if plan_type == "free" or is_downgrade:
+        # Cancel the current Shopify subscription and schedule the downgrade
+        charge_id = tenant.get("shopify_charge_id")
+        period_end = tenant.get("current_period_end")
+        if not period_end:
+            activated = tenant.get("activated_on") or datetime.utcnow()
+            if isinstance(activated, str):
+                try:
+                    activated = datetime.fromisoformat(activated.replace("Z", "+00:00")).replace(tzinfo=None)
+                except Exception:
+                    activated = datetime.utcnow()
+            period_end = activated + timedelta(days=30)
+
+        if charge_id and old_price > 0:
+            try:
+                await cancel_subscription(tenant["shop_domain"], tenant["_token"], charge_id)
+            except Exception as e:
+                logger.warning(f"⚠️ Could not cancel Shopify subscription {charge_id}: {e}")
+
+        await schedule_downgrade(tenant["_id"], plan_type, period_end)
+        await _log_subscription_event(
+            db, str(tenant["_id"]), "downgrade_scheduled",
+            tenant.get("plan"), plan_type, 0.0,
+            {"period_end": period_end.isoformat() if hasattr(period_end, "isoformat") else str(period_end)}
+        )
+        return {
+            "success": True,
+            "scheduled": True,
+            "plan": plan_type,
+            "effective_date": period_end.date().isoformat() if hasattr(period_end, "date") else str(period_end),
+            "message": f"Downgrade scheduled. Your current plan stays active until {period_end}."
+        }
 
     try:
         charge = await create_subscription_charge(
@@ -123,7 +201,6 @@ async def create_subscription(
             plan_type
         )
 
-        db = await get_db()
         await aw(db.tenants.update_one(
             {"_id": tenant["_id"]},
             {"$set": {"pending_charge_id": charge["id"], "pending_plan": plan_type}}
@@ -139,6 +216,22 @@ async def create_subscription(
     except Exception as e:
         logger.error(f"❌ Failed to create subscription: {e}")
         raise HTTPException(500, f"Failed to create subscription: {str(e)}")
+
+
+@router.post("/cancel-downgrade")
+async def cancel_downgrade_endpoint(tenant: dict = Depends(get_current_tenant)):
+    """Cancel a previously scheduled downgrade and restore the subscription."""
+    if not tenant.get("pending_downgrade_plan"):
+        raise HTTPException(400, "No pending downgrade to cancel")
+
+    db = await get_db()
+    from_plan = tenant.get("plan", "free")
+    await cancel_scheduled_downgrade(tenant["_id"])
+    await _log_subscription_event(
+        db, str(tenant["_id"]), "downgrade_cancelled",
+        from_plan, from_plan, 0.0, {}
+    )
+    return {"success": True, "message": "Scheduled downgrade has been cancelled."}
 
 
 @router.get("/callback")
@@ -157,10 +250,23 @@ async def billing_callback(
         )
 
         trial_days = charge.get("trialDays", 0) if charge else 0
-        trial_ends_at = datetime.utcnow() + timedelta(days=trial_days) if trial_days > 0 else None
+        now = datetime.utcnow()
+        trial_ends_at = now + timedelta(days=trial_days) if trial_days > 0 else None
+
+        # Parse period end from Shopify response
+        current_period_end = None
+        raw_period_end = (charge or {}).get("currentPeriodEnd")
+        if raw_period_end:
+            try:
+                current_period_end = datetime.fromisoformat(raw_period_end.replace("Z", "+00:00")).replace(tzinfo=None)
+            except Exception:
+                pass
+        if not current_period_end:
+            current_period_end = now + timedelta(days=30)
 
         db = await get_db()
-        plan_type = tenant.get("pending_plan", "starter")
+        plan_type = tenant.get("pending_plan", "free")
+        old_plan = tenant.get("plan", "free")
 
         await aw(db.tenants.update_one(
             {"_id": tenant["_id"]},
@@ -170,11 +276,18 @@ async def billing_callback(
                     "subscription_status": "trial" if trial_days > 0 else "active",
                     "shopify_charge_id": charge_id,
                     "trial_ends_at": trial_ends_at,
-                    "activated_on": datetime.utcnow(),
+                    "current_period_end": current_period_end,
+                    "activated_on": now,
                 },
                 "$unset": {"pending_charge_id": "", "pending_plan": ""}
             }
         ))
+        await _log_subscription_event(
+            db, str(tenant["_id"]), "plan_upgraded",
+            old_plan, plan_type,
+            PLANS.get(plan_type, {}).get("price", 0.0),
+            {"charge_id": charge_id, "trial_days": trial_days}
+        )
 
         logger.info(f"✅ Subscription activated for {tenant['shop_domain']}: {plan_type}")
         return RedirectResponse(

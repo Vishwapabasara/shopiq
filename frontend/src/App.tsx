@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { authApi } from './lib/api'
+import { authApi, billingApi } from './lib/api'
 import { Sidebar } from './components/layout/Sidebar'
 import { AuditPage } from './pages/AuditPage'
 import { ReturnsPage } from './pages/ReturnsPage'
@@ -78,11 +78,62 @@ function AuthGuard() {
 
 // ── Dashboard shell ───────────────────────────────────────────────────────────
 
+function GlobalBanners() {
+  const { data } = useQuery({
+    queryKey: ['billing-usage'],
+    queryFn: billingApi.getUsage,
+    staleTime: 60_000,
+  })
+
+  const sub = data?.subscription
+  if (!sub) return null
+
+  const isPastDue = sub.status === 'past_due'
+  const isTrialEnding = sub.status === 'trial' && sub.trial_ends_at &&
+    Math.ceil((new Date(sub.trial_ends_at).getTime() - Date.now()) / 86400000) <= 3
+  const trialDaysLeft = sub.trial_ends_at
+    ? Math.max(0, Math.ceil((new Date(sub.trial_ends_at).getTime() - Date.now()) / 86400000))
+    : 0
+  const hasPendingDowngrade = !!sub.pending_downgrade_plan
+
+  if (!isPastDue && !isTrialEnding && !hasPendingDowngrade) return null
+
+  return (
+    <div>
+      {isPastDue && (
+        <div className="bg-red-500 text-white text-xs font-medium px-6 py-2 flex items-center justify-between">
+          <span>Payment failed — your subscription is past due. Features may be restricted soon.</span>
+          <Link to="/dashboard/account" className="underline ml-4 flex-shrink-0">Manage billing</Link>
+        </div>
+      )}
+      {isTrialEnding && !isPastDue && (
+        <div className="bg-amber-500 text-white text-xs font-medium px-6 py-2 flex items-center justify-between">
+          <span>Your trial ends in {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''}.</span>
+          <Link to="/dashboard/account" className="underline ml-4 flex-shrink-0">Manage plan</Link>
+        </div>
+      )}
+      {hasPendingDowngrade && !isPastDue && (
+        <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-300 font-medium px-6 py-2 flex items-center justify-between">
+          <span>
+            Downgrade to {sub.pending_downgrade_plan} scheduled for{' '}
+            {sub.pending_downgrade_at
+              ? new Date(sub.pending_downgrade_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              : 'end of billing period'
+            }.
+          </span>
+          <Link to="/dashboard/account" className="underline ml-4 flex-shrink-0">View</Link>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DashboardShell() {
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
       <Sidebar />
       <main className="flex-1 flex flex-col min-w-0">
+        <GlobalBanners />
         <Outlet />
       </main>
     </div>

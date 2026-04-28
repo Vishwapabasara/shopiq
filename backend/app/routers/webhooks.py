@@ -3,10 +3,11 @@ import logging
 import hmac
 import hashlib
 from fastapi import APIRouter, Request, HTTPException, Header
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from app.config import settings
+from app.config import settings, PLANS
 from app.dependencies import get_db
+from app.services.billing import apply_pending_downgrades, _log_subscription_event
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 logger = logging.getLogger(__name__)
@@ -246,3 +247,120 @@ async def shop_redact(
     )
     
     return {"message": "Shop data deleted successfully"}
+
+
+# ── App subscription lifecycle ────────────────────────────────────────────────
+
+@router.post("/app_subscriptions/update")
+async def app_subscription_update(
+    request: Request,
+    x_shopify_hmac_sha256: str = Header(None),
+    x_shopify_shop_domain: str = Header(None),
+):
+    """
+    Shopify fires this when a subscription status changes:
+    CANCELLED, EXPIRED, ACTIVE, DECLINED, FROZEN, UNFROZEN.
+    """
+    body = await request.body()
+
+    if not x_shopify_hmac_sha256 or not verify_webhook(body, x_shopify_hmac_sha256):
+        logger.error("❌ Invalid HMAC on app_subscriptions/update")
+        raise HTTPException(status_code=401, detail="Invalid HMAC")
+
+    data = await request.json()
+    shop_domain = x_shopify_shop_domain or data.get("shop_domain")
+    app_subscription = data.get("app_subscription", {})
+    status = app_subscription.get("status", "").upper()
+    subscription_id = app_subscription.get("admin_graphql_api_id") or app_subscription.get("id")
+
+    db = await get_db()
+    tenant = await db.tenants.find_one({"shop_domain": shop_domain})
+
+    if not tenant:
+        logger.warning(f"⚠️ app_subscriptions/update: unknown shop {shop_domain}")
+        return {"message": "ok"}
+
+    logger.info(f"🔔 Subscription event for {shop_domain}: {status}")
+
+    if status in ("CANCELLED", "EXPIRED"):
+        # Check if this is an intentional downgrade — apply it now
+        pending_plan = tenant.get("pending_downgrade_plan")
+        if pending_plan:
+            await db.tenants.update_one(
+                {"_id": tenant["_id"]},
+                {
+                    "$set": {
+                        "plan": pending_plan,
+                        "subscription_status": "active",
+                        "shopify_charge_id": None,
+                    },
+                    "$unset": {
+                        "pending_downgrade_plan": "",
+                        "pending_downgrade_at": "",
+                        "cancel_at_period_end": "",
+                    },
+                },
+            )
+            await _log_subscription_event(
+                db, str(tenant["_id"]), "plan_downgraded",
+                tenant.get("plan"), pending_plan, 0.0,
+                {"trigger": "shopify_webhook", "status": status}
+            )
+            logger.info(f"✅ Applied pending downgrade: {shop_domain} → {pending_plan}")
+        else:
+            # Unilateral cancellation — fall to free
+            await db.tenants.update_one(
+                {"_id": tenant["_id"]},
+                {"$set": {
+                    "plan": "free",
+                    "subscription_status": "cancelled",
+                    "shopify_charge_id": None,
+                }}
+            )
+            await _log_subscription_event(
+                db, str(tenant["_id"]), "subscription_cancelled",
+                tenant.get("plan"), "free", 0.0,
+                {"trigger": "shopify_webhook", "status": status}
+            )
+
+    elif status == "ACTIVE":
+        # Could be a renewal — update period_end if present
+        raw_period_end = app_subscription.get("current_period_end")
+        update_fields: dict = {"subscription_status": "active"}
+        if raw_period_end:
+            try:
+                period_end = datetime.fromisoformat(raw_period_end.replace("Z", "+00:00")).replace(tzinfo=None)
+                update_fields["current_period_end"] = period_end
+            except Exception:
+                pass
+        await db.tenants.update_one({"_id": tenant["_id"]}, {"$set": update_fields})
+        await _log_subscription_event(
+            db, str(tenant["_id"]), "subscription_renewed",
+            tenant.get("plan"), tenant.get("plan"), 0.0,
+            {"trigger": "shopify_webhook"}
+        )
+
+    elif status == "DECLINED":
+        await db.tenants.update_one(
+            {"_id": tenant["_id"]},
+            {"$set": {"subscription_status": "past_due", "past_due_since": datetime.utcnow()}}
+        )
+        await _log_subscription_event(
+            db, str(tenant["_id"]), "payment_declined",
+            tenant.get("plan"), tenant.get("plan"), 0.0,
+            {"trigger": "shopify_webhook"}
+        )
+
+    elif status == "FROZEN":
+        await db.tenants.update_one(
+            {"_id": tenant["_id"]},
+            {"$set": {"subscription_status": "frozen"}}
+        )
+
+    elif status == "UNFROZEN":
+        await db.tenants.update_one(
+            {"_id": tenant["_id"]},
+            {"$set": {"subscription_status": "active"}}
+        )
+
+    return {"message": "ok"}

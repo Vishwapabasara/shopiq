@@ -146,6 +146,9 @@ export interface BillingUsage {
     status: string
     trial_ends_at: string | null
     cancel_at_period_end: boolean
+    current_period_end: string | null
+    pending_downgrade_plan: string | null
+    pending_downgrade_at: string | null
   }
 }
 
@@ -157,6 +160,7 @@ export const authApi = {
 }
 
 export const billingApi = {
+  getUsage: () => api.get<BillingUsage>('/billing/usage').then(r => r.data),
   usage: () => api.get<BillingUsage>('/billing/usage').then(r => r.data),
   plans: () => api.get<{ plans: Record<string, unknown> }>('/billing/plans').then(r => r.data),
 }

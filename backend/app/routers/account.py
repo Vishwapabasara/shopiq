@@ -170,6 +170,8 @@ async def get_profile(tenant: dict = Depends(get_current_tenant)):
 
     # ── Subscription ─────────────────────────────────────────────────────────────
     trial_ends_at = tenant.get("trial_ends_at")
+    pending_downgrade_at = tenant.get("pending_downgrade_at")
+    current_period_end = tenant.get("current_period_end")
     installed_at = tenant.get("installed_at")
 
     return {
@@ -187,6 +189,9 @@ async def get_profile(tenant: dict = Depends(get_current_tenant)):
             "trial_ends_at": trial_ends_at.isoformat() if isinstance(trial_ends_at, datetime) else trial_ends_at,
             "cancel_at_period_end": tenant.get("cancel_at_period_end", False),
             "shopify_charge_id": tenant.get("shopify_charge_id"),
+            "current_period_end": current_period_end.isoformat() if isinstance(current_period_end, datetime) else current_period_end,
+            "pending_downgrade_plan": tenant.get("pending_downgrade_plan"),
+            "pending_downgrade_at": pending_downgrade_at.isoformat() if isinstance(pending_downgrade_at, datetime) else pending_downgrade_at,
         },
 
         # Usage (current month)
