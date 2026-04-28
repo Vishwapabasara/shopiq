@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiClient } from '../utils/api'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { api, billingApi } from '../lib/api'
+import { Spinner } from '../components/ui'
+import { cn } from '../lib/utils'
 
 interface Plan {
   name: string
@@ -14,53 +17,79 @@ interface Plan {
 }
 
 export function PlansPage() {
-  const [plans, setPlans] = useState<Record<string, Plan>>({})
-  const [currentPlan, setCurrentPlan] = useState<string>('free')
-  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
   const toDashboard = () => {
-    const shop = new URLSearchParams(window.location.search).get('shop') || sessionStorage.getItem('shopiq_shop') || localStorage.getItem('shopiq_shop')
-    const host = new URLSearchParams(window.location.search).get('host') || sessionStorage.getItem('shopiq_host') || localStorage.getItem('shopiq_host')
+    const p = new URLSearchParams(window.location.search)
+    const shop = p.get('shop') || sessionStorage.getItem('shopiq_shop') || ''
+    const host = p.get('host') || sessionStorage.getItem('shopiq_host') || ''
     const qs = new URLSearchParams()
     if (shop) qs.set('shop', shop)
     if (host) qs.set('host', host)
-    navigate(qs.size > 0 ? `/dashboard?${qs.toString()}` : '/dashboard')
+    const q = qs.toString()
+    navigate(q ? `/dashboard?${q}` : '/dashboard')
   }
 
-  useEffect(() => {
-    Promise.all([
-      apiClient.get('/billing/plans').then(d => setPlans(d.plans)),
-      apiClient.get('/billing/usage').then(d => setCurrentPlan(d.plan)),
-    ]).catch(console.error)
-  }, [])
+  const { data: usageData, isLoading: usageLoading } = useQuery({
+    queryKey: ['billing-usage'],
+    queryFn: billingApi.getUsage,
+    staleTime: 30_000,
+  })
 
-  const handleSubscribe = async (planType: string) => {
-    setLoading(true)
+  const { data: plansData, isLoading: plansLoading } = useQuery({
+    queryKey: ['billing-plans'],
+    queryFn: billingApi.plans,
+    staleTime: Infinity,
+  })
+
+  const currentPlan = usageData?.plan ?? 'free'
+  const plans = (plansData?.plans ?? {}) as Record<string, Plan>
+
+  const handleSubscribe = async (planKey: string) => {
+    if (planKey === currentPlan || loadingPlan) return
+    setLoadingPlan(planKey)
+    setError(null)
     try {
-      const response = await apiClient.post(`/billing/subscribe/${planType}`)
+      const res = await api.post<{
+        test_mode?: boolean
+        scheduled?: boolean
+        confirmation_url?: string
+        plan?: string
+        message?: string
+      }>(`/billing/subscribe/${planKey}`).then(r => r.data)
 
-      if (response.test_mode) {
-        alert(`✅ ${response.message}\n\n(Running in test mode — no charges will be made)`)
-        setCurrentPlan(planType)
-        toDashboard()
-      } else if (response.confirmation_url) {
-        window.top!.location.href = response.confirmation_url
-      } else {
-        setCurrentPlan(planType)
-        toDashboard()
+      if (res.confirmation_url) {
+        // Redirect to Shopify payment gateway
+        window.top!.location.href = res.confirmation_url
+        return
       }
-    } catch (error: any) {
-      console.error('Subscription error:', error)
-      alert(error?.message ?? 'Failed to subscribe. Please try again.')
+
+      // DEV mode or scheduled downgrade — refresh data and go to dashboard
+      await qc.invalidateQueries({ queryKey: ['me'] })
+      await qc.invalidateQueries({ queryKey: ['billing-usage'] })
+      await qc.invalidateQueries({ queryKey: ['account-profile'] })
+      toDashboard()
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail ?? err?.message ?? 'Failed to subscribe. Please try again.'
+      setError(msg)
     } finally {
-      setLoading(false)
+      setLoadingPlan(null)
     }
   }
 
+  if (usageLoading || plansLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Spinner size={28} />
+      </div>
+    )
+  }
+
   const planOrder = ['free', 'pro', 'enterprise']
-  const orderedPlans = planOrder
-    .filter(k => plans[k])
-    .map(k => ({ key: k, plan: plans[k] }))
+  const orderedPlans = planOrder.filter(k => plans[k]).map(k => ({ key: k, plan: plans[k] }))
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
@@ -68,8 +97,8 @@ export function PlansPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <button
-            onClick={() => toDashboard()}
-            className="text-sm text-slate-500 hover:text-slate-700 mb-6 inline-flex items-center gap-1"
+            onClick={toDashboard}
+            className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 mb-6 inline-flex items-center gap-1 transition-colors"
           >
             ← Back to dashboard
           </button>
@@ -77,75 +106,93 @@ export function PlansPage() {
           <p className="text-slate-500 dark:text-slate-400">Unlock the full power of ShopIQ</p>
         </div>
 
+        {error && (
+          <div className="mb-8 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-5 py-3 text-sm text-red-600 dark:text-red-400 text-center">
+            {error}
+          </div>
+        )}
+
         {/* Plan cards */}
         <div className="grid md:grid-cols-3 gap-6">
-          {orderedPlans.map(({ key, plan }) => (
-            <div
-              key={key}
-              className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm border p-8 relative flex flex-col ${
-                key === 'pro'
-                  ? 'border-brand-500 ring-2 ring-brand-500 shadow-md'
-                  : key === 'enterprise'
-                  ? 'border-purple-300 dark:border-purple-700'
-                  : 'border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              {key === 'pro' && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className="bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                    Most popular
-                  </span>
-                </div>
-              )}
+          {orderedPlans.map(({ key, plan }) => {
+            const isCurrent = key === currentPlan
+            const isLoading = loadingPlan === key
 
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">{plan.name}</h2>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-slate-900 dark:text-slate-100">${plan.price}</span>
-                  {plan.price > 0 && (
-                    <span className="text-slate-400 dark:text-slate-500 text-sm">/month</span>
+            return (
+              <div
+                key={key}
+                className={cn(
+                  'bg-white dark:bg-slate-800 rounded-2xl shadow-sm border p-8 relative flex flex-col',
+                  key === 'pro'
+                    ? 'border-brand-500 ring-2 ring-brand-500 shadow-md'
+                    : key === 'enterprise'
+                    ? 'border-purple-300 dark:border-purple-700'
+                    : 'border-slate-200 dark:border-slate-700'
+                )}
+              >
+                {key === 'pro' && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span className="bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      Most popular
+                    </span>
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">{plan.name}</h2>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold text-slate-900 dark:text-slate-100">${plan.price}</span>
+                    {plan.price > 0 && (
+                      <span className="text-slate-400 dark:text-slate-500 text-sm">/month</span>
+                    )}
+                  </div>
+                  {plan.trial_days && plan.price > 0 && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
+                      {plan.trial_days}-day free trial
+                    </p>
                   )}
                 </div>
-                {plan.trial_days && (
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
-                    {plan.trial_days}-day free trial
-                  </p>
-                )}
+
+                <ul className="space-y-2.5 mb-8 flex-1">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <span className="text-emerald-500 mt-0.5 flex-shrink-0">✓</span>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => handleSubscribe(key)}
+                  disabled={!!loadingPlan || isCurrent}
+                  className={cn(
+                    'w-full py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2',
+                    isCurrent
+                      ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                      : key === 'pro'
+                      ? 'bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-60'
+                      : key === 'enterprise'
+                      ? 'bg-slate-900 dark:bg-purple-700 text-white hover:bg-slate-800 dark:hover:bg-purple-600 disabled:opacity-60'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-60'
+                  )}
+                >
+                  {isLoading && <Spinner size={14} className={key === 'free' ? 'text-slate-600' : 'text-white'} />}
+                  {isCurrent
+                    ? 'Current plan'
+                    : isLoading
+                    ? 'Processing…'
+                    : key === 'free'
+                    ? 'Downgrade to Free'
+                    : `Upgrade to ${plan.name}`}
+                </button>
               </div>
-
-              <ul className="space-y-2.5 mb-8 flex-1">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                    <span className="text-emerald-500 mt-0.5 flex-shrink-0">✓</span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => handleSubscribe(key)}
-                disabled={loading || currentPlan === key}
-                className={`w-full py-2.5 rounded-xl text-sm font-semibold transition ${
-                  currentPlan === key
-                    ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
-                    : key === 'pro'
-                    ? 'bg-brand-600 text-white hover:bg-brand-700'
-                    : key === 'enterprise'
-                    ? 'bg-slate-900 dark:bg-purple-700 text-white hover:bg-slate-800 dark:hover:bg-purple-600'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                }`}
-              >
-                {loading
-                  ? 'Processing…'
-                  : currentPlan === key
-                  ? 'Current plan'
-                  : key === 'free'
-                  ? 'Downgrade to Free'
-                  : `Upgrade to ${plan.name}`}
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
+
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-8">
+          Billing is processed securely through Shopify. Cancel anytime.
+        </p>
       </div>
     </div>
   )

@@ -194,10 +194,14 @@ async def create_subscription(
             "message": f"Downgrade scheduled. Your current plan stays active until {period_end}."
         }
 
+    token = tenant.get("_token", "")
+    if not token or token in ("mock_token_not_real", ""):
+        raise HTTPException(400, "Shop access token is not configured. Please reinstall the app.")
+
     try:
         charge = await create_subscription_charge(
             tenant["shop_domain"],
-            tenant["_token"],
+            token,
             plan_type
         )
 
@@ -213,9 +217,14 @@ async def create_subscription(
             "charge_id": charge["id"]
         }
 
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.error(f"❌ Billing value error for {tenant['shop_domain']}: {e}")
+        raise HTTPException(400, str(e))
     except Exception as e:
-        logger.error(f"❌ Failed to create subscription: {e}")
-        raise HTTPException(500, f"Failed to create subscription: {str(e)}")
+        logger.error(f"❌ Failed to create subscription for {tenant['shop_domain']}: {e}", exc_info=True)
+        raise HTTPException(502, f"Shopify billing error: {str(e)}")
 
 
 @router.post("/cancel-downgrade")

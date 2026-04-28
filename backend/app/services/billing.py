@@ -73,7 +73,8 @@ async def create_subscription_charge(
 
     errors = data.get("data", {}).get("appSubscriptionCreate", {}).get("userErrors", [])
     if errors:
-        raise Exception(f"Shopify billing error: {errors}")
+        messages = "; ".join(e.get("message", str(e)) for e in errors)
+        raise Exception(f"Shopify billing error: {messages}")
 
     result = data["data"]["appSubscriptionCreate"]
     subscription = result["appSubscription"]
