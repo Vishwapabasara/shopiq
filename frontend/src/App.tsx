@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { authApi, billingApi } from './lib/api'
+import { adminAuth } from './lib/adminApi'
 import { Sidebar } from './components/layout/Sidebar'
 import { AuditPage } from './pages/AuditPage'
 import { ReturnsPage } from './pages/ReturnsPage'
@@ -14,6 +15,8 @@ import { PlansPage } from './pages/PlansPage'
 import { AccountPage } from './pages/AccountPage'
 import { Spinner } from './components/ui'
 import { AuthCallback } from './pages/AuthCallback'
+import { AdminLoginPage } from './pages/admin/AdminLoginPage'
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 
 // ── Shopify-param-preserving redirect ─────────────────────────────────────────
 // React Router's <Navigate> strips query params. This component copies
@@ -35,6 +38,13 @@ function ShopifyNavigate({ to }: { to: string }) {
 
   const q = qs.toString()
   return <Navigate to={q ? `${to}?${q}` : to} replace />
+}
+
+// ── Admin guard ───────────────────────────────────────────────────────────────
+
+function AdminGuard() {
+  if (!adminAuth.isLoggedIn()) return <Navigate to="/admin/login" replace />
+  return <Outlet />
 }
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
@@ -146,6 +156,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* ── Admin routes — completely separate auth ───────────────────── */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route element={<AdminGuard />}>
+          <Route path="/admin" element={<AdminDashboardPage />} />
+        </Route>
+
         {/* ✅ Public routes - NO auth required */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     # app is migrated to the Shopify Partners dashboard.
     BILLING_ENABLED: bool = False
 
+    # Admin panel credentials — set both in env vars to enable admin access
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = ""
+
     # Logging
     LOG_LEVEL: str = "INFO"
 
