@@ -88,7 +88,7 @@ const NAV_ECOMMERCE = [
 ]
 
 const NAV_OPS = [
-  { to: '/dashboard/reviews',  icon: Icons.star,     label: 'ReviewReply',   active: false },
+  { to: '/dashboard/reviews',  icon: Icons.star,     label: 'ReviewReply',   active: true  },
   { to: '/dashboard/leads',    icon: Icons.leads,    label: 'LeadForge',     active: false },
   { to: '/dashboard/invoice',  icon: Icons.invoice,  label: 'InvoiceFlow',   active: false },
   { to: '/dashboard/contract', icon: Icons.contract, label: 'ContractPilot', active: false },

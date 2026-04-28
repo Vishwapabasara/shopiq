@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
-from app.routers import auth, audit, billing, webhooks, returns, stock, price, copy
+from app.routers import auth, audit, billing, webhooks, returns, stock, price, copy, reviews
 
 from app.config import settings
 
@@ -59,6 +59,7 @@ app.include_router(returns.router)
 app.include_router(stock.router)
 app.include_router(price.router)
 app.include_router(copy.router)
+app.include_router(reviews.router)
 
 if settings.DEV_MODE:
     from app.dev.dev_router import router as dev_router

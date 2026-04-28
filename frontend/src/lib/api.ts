@@ -349,6 +349,60 @@ export interface CopySession {
   error_message: string | null
 }
 
+// ── ReviewReply AI types ──────────────────────────────────────────────────────
+
+export interface ReviewItem {
+  review_id: string
+  platform: string
+  product_id: string | null
+  product_title: string | null
+  product_image: string | null
+  author: string
+  rating: number
+  title: string | null
+  body: string
+  date: string
+  sentiment: 'positive' | 'neutral' | 'negative' | null
+  ai_response: string | null
+  edited_response: string | null
+  is_escalation: boolean
+  status: 'pending' | 'approved' | 'rejected' | 'posted'
+}
+
+export interface ReviewBatchStatus {
+  batch_id: string
+  status: 'queued' | 'running' | 'complete' | 'failed'
+  reviews_count: number
+  responses_generated: number
+  error_message: string | null
+}
+
+export interface ReviewBatch {
+  _id: string
+  status: 'queued' | 'running' | 'complete' | 'failed'
+  brand_voice: { summary: string; tone: string } | null
+  reviews_count: number
+  responses_generated: number
+  reviews: ReviewItem[]
+  created_at: string
+  completed_at: string | null
+  error_message: string | null
+}
+
+export const reviewsApi = {
+  seedDemo:   () => api.post<{ batch_id: string; status: string; message: string }>('/reviews/seed-demo').then(r => r.data),
+  generate:   () => api.post<{ batch_id: string; status: string; message: string }>('/reviews/generate').then(r => r.data),
+  latest:     () => api.get<ReviewBatch | null>('/reviews/latest').then(r => r.data),
+  status:     (id: string) => api.get<ReviewBatchStatus>(`/reviews/${id}/status`).then(r => r.data),
+  results:    (id: string) => api.get<ReviewBatch>(`/reviews/${id}/results`).then(r => r.data),
+  editReview: (batchId: string, reviewId: string, editedResponse: string) =>
+    api.patch(`/reviews/${batchId}/review/${reviewId}`, { edited_response: editedResponse }),
+  post:       (batchId: string, reviewIds: string[]) =>
+    api.post<{ success: boolean; posted: number; total: number }>(`/reviews/${batchId}/post`, { review_ids: reviewIds }).then(r => r.data),
+  cancel:     (batchId: string) =>
+    api.post<{ status: string; message: string }>(`/reviews/${batchId}/cancel`).then(r => r.data),
+}
+
 export const copyApi = {
   generate: (body: { filter_mode?: string; max_products?: number; product_ids?: string[] }) =>
     api.post<{ session_id: string; status: string; message: string }>('/copy/generate', body),

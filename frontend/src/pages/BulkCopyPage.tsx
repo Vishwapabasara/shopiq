@@ -445,7 +445,7 @@ function ReviewView({
     )
   )
   const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(results.filter(r => r.status !== 'rejected').map(r => r.product_id))
+    () => new Set(results.filter(r => r.status !== 'rejected' && r.status !== 'pushed' && r.status !== 'failed').map(r => r.product_id))
   )
   const [pushResult, setPushResult] = useState<{ pushed: number; total: number } | null>(null)
 
@@ -457,7 +457,8 @@ function ReviewView({
     },
   })
 
-  const nonRejectedSelected = [...selected].filter(id => localStatus[id] !== 'rejected')
+  const pushedIds = new Set(results.filter(r => r.status === 'pushed' || r.status === 'failed').map(r => r.product_id))
+  const nonRejectedSelected = [...selected].filter(id => localStatus[id] !== 'rejected' && !pushedIds.has(id))
 
   function toggleAll() {
     if (nonRejectedSelected.length === results.filter(r => localStatus[r.product_id] !== 'rejected' && r.status !== 'pushed').length) {
@@ -561,16 +562,22 @@ function ReviewView({
 
       {/* Sticky push bar */}
       <div className="flex-shrink-0 px-6 py-4 bg-white border-t border-slate-200 flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          <span className="font-semibold text-slate-800">{nonRejectedSelected.length}</span> product{nonRejectedSelected.length !== 1 ? 's' : ''} selected to push
-        </p>
+        {nonRejectedSelected.length === 0 && pushedIds.size === results.length ? (
+          <p className="text-sm text-emerald-600 font-medium flex items-center gap-1.5">
+            <span>✓</span> All products pushed to Shopify
+          </p>
+        ) : (
+          <p className="text-sm text-slate-500">
+            <span className="font-semibold text-slate-800">{nonRejectedSelected.length}</span> product{nonRejectedSelected.length !== 1 ? 's' : ''} selected to push
+          </p>
+        )}
         <button
           onClick={() => push.mutate(nonRejectedSelected)}
           disabled={nonRejectedSelected.length === 0 || push.isPending}
-          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl font-semibold text-sm transition-colors flex items-center gap-2"
+          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition-colors flex items-center gap-2"
         >
           {push.isPending && <Spinner size={14} />}
-          Push {nonRejectedSelected.length > 0 ? nonRejectedSelected.length : ''} to Shopify →
+          {nonRejectedSelected.length === 0 ? 'Nothing to push' : `Push ${nonRejectedSelected.length} to Shopify →`}
         </button>
       </div>
     </div>

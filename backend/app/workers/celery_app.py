@@ -23,6 +23,7 @@ celery_app = Celery(
         "app.workers.stock_worker",
         "app.workers.price_worker",
         "app.workers.copy_worker",
+        "app.workers.review_worker",
     ],
 )
 

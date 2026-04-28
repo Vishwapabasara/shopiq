@@ -9,6 +9,7 @@ import { PricePulsePage } from './pages/PricePulsePage'
 import { LoginPage } from './pages/LoginPage'
 import { ComingSoonPage } from './pages/ComingSoonPage'
 import { BulkCopyPage } from './pages/BulkCopyPage'
+import { ReviewReplyPage } from './pages/ReviewReplyPage'
 import { PlansPage } from './pages/PlansPage'
 import { Spinner } from './components/ui'
 import { AuthCallback } from './pages/AuthCallback'
@@ -112,10 +113,7 @@ export default function App() {
                 description="Daily competitor price monitoring across your catalogue. Alerts when you're undercut and suggests optimal price points based on your margin rules." />
             } />
             <Route path="/dashboard/copy" element={<BulkCopyPage />} />
-            <Route path="/dashboard/reviews" element={
-              <ComingSoonPage module="ReviewReply Pro" icon="★"
-                description="AI-powered review response automation for Google Business, Trustpilot, and Amazon. Approve AI drafts in one click — your brand voice, zero effort." />
-            } />
+            <Route path="/dashboard/reviews" element={<ReviewReplyPage />} />
             <Route path="/dashboard/leads" element={
               <ComingSoonPage module="LeadForge" icon="◎"
                 description="B2B lead enrichment and outreach sequencer. Import a CSV of companies and get enriched contact data with AI-personalised cold emails ready to send." />
