@@ -30,7 +30,13 @@
           window.history.replaceState({}, '', window.location.pathname + '?' + p.toString());
         }
 
-        if (shop) {
+        // Only load App Bridge when running inside the Shopify Admin iframe.
+        // In a standalone tab (window.self === window.top) there is no parent
+        // frame to issue session tokens, so skip it and let cookie auth handle
+        // the request — get_current_tenant() falls back to Method 1/2.
+        var isEmbedded = window.self !== window.top;
+
+        if (shop && isEmbedded) {
           var m = document.createElement('meta');
           m.name = 'shopify-shop';
           m.content = shop;

@@ -310,6 +310,60 @@ export const stockApi = {
   cancel:   (id: string) => api.post(`/stock/${id}/cancel`),
 }
 
+// ── BulkCopy AI types ─────────────────────────────────────────────────────────
+
+export interface CopyProductResult {
+  product_id: string
+  title: string
+  handle: string
+  image_url: string | null
+  current_description: string
+  current_score: number | null
+  generated_description: string
+  predicted_score: number
+  seo_title: string
+  meta_description: string
+  key_improvements: string[]
+  status: 'pending' | 'approved' | 'rejected' | 'pushed' | 'failed'
+  edited_description: string | null
+}
+
+export interface CopySessionStatus {
+  session_id: string
+  status: 'queued' | 'running' | 'complete' | 'failed'
+  products_requested: number
+  products_generated: number
+  error_message: string | null
+}
+
+export interface CopySession {
+  _id: string
+  status: 'queued' | 'running' | 'complete' | 'failed'
+  brand_voice: { summary: string; tone: string; emotional_triggers?: string[] } | null
+  filter_mode: string
+  products_requested: number
+  products_generated: number
+  results: CopyProductResult[]
+  created_at: string
+  completed_at: string | null
+  error_message: string | null
+}
+
+export const copyApi = {
+  generate: (body: { filter_mode?: string; max_products?: number; product_ids?: string[] }) =>
+    api.post<{ session_id: string; status: string; message: string }>('/copy/generate', body),
+  latest:   () => api.get<CopySession | null>('/copy/latest').then(r => r.data),
+  status:   (id: string) => api.get<CopySessionStatus>(`/copy/${id}/status`).then(r => r.data),
+  results:  (id: string) => api.get<CopySession>(`/copy/${id}/results`).then(r => r.data),
+  editProduct: (sessionId: string, productId: string, editedDescription: string) =>
+    api.patch(`/copy/${sessionId}/product/${productId}`, { edited_description: editedDescription }),
+  push: (sessionId: string, productIds: string[]) =>
+    api.post<{ success: boolean; pushed: number; total: number; results: Record<string, { success: boolean; error?: string }> }>(
+      `/copy/${sessionId}/push`,
+      { product_ids: productIds }
+    ).then(r => r.data),
+}
+
 export const auditApi = {
   run: () => api.post<{ audit_id: string; status: string; message: string }>('/audit/run'),
   status: (id: string) => api.get<AuditStatus>(`/audit/${id}/status`).then(r => r.data),

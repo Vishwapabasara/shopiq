@@ -8,6 +8,7 @@ import { StockSensePage } from './pages/StockSensePage'
 import { PricePulsePage } from './pages/PricePulsePage'
 import { LoginPage } from './pages/LoginPage'
 import { ComingSoonPage } from './pages/ComingSoonPage'
+import { BulkCopyPage } from './pages/BulkCopyPage'
 import { PlansPage } from './pages/PlansPage'
 import { Spinner } from './components/ui'
 import { AuthCallback } from './pages/AuthCallback'
@@ -110,10 +111,7 @@ export default function App() {
               <ComingSoonPage module="PricePulse" icon="◉"
                 description="Daily competitor price monitoring across your catalogue. Alerts when you're undercut and suggests optimal price points based on your margin rules." />
             } />
-            <Route path="/dashboard/copy" element={
-              <ComingSoonPage module="BulkCopy AI" icon="✦"
-                description="Bulk AI product description generator. Upload a CSV of SKUs and get SEO-optimised, brand-voice-matched descriptions pushed straight to Shopify." />
-            } />
+            <Route path="/dashboard/copy" element={<BulkCopyPage />} />
             <Route path="/dashboard/reviews" element={
               <ComingSoonPage module="ReviewReply Pro" icon="★"
                 description="AI-powered review response automation for Google Business, Trustpilot, and Amazon. Approve AI drafts in one click — your brand voice, zero effort." />
