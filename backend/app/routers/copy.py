@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.dependencies import get_current_tenant, get_db
+from app.services.billing import check_copy_limit, increment_usage
 from app.utils.crypto import decrypt_token
 from app.utils.shopify_client import SHOPIFY_API_VERSION, shopify_headers
 
@@ -52,6 +53,16 @@ class EditRequest(BaseModel):
 
 @router.post("/generate")
 async def generate(body: GenerateRequest, tenant: dict = Depends(get_current_tenant)):
+    limit_check = await check_copy_limit(tenant)
+    if not limit_check["allowed"]:
+        raise HTTPException(status_code=402, detail={
+            "error": limit_check["reason"],
+            "message": limit_check["message"],
+            "limits": limit_check["limits"],
+            "usage": limit_check["usage"],
+            "action": "upgrade",
+        })
+
     db = await get_db()
     tenant_id = str(tenant["_id"])
 
@@ -98,6 +109,7 @@ async def generate(body: GenerateRequest, tenant: dict = Depends(get_current_ten
         {"_id": result.inserted_id},
         {"$set": {"celery_task_id": task.id}},
     ))
+    await increment_usage(tenant["_id"], copy_generations=1)
 
     logger.info(f"🚀 [BulkCopy] Session {session_id} queued for {tenant['shop_domain']}")
     return {

@@ -6,7 +6,9 @@ interface Plan {
   name: string
   price: number
   audits_per_month: number
-  max_products: number
+  copy_generations_per_month?: number
+  ai_fixes_per_month?: number
+  audit_batch_size?: number
   features: string[]
   trial_days?: number
 }
@@ -61,7 +63,7 @@ export function PlansPage() {
     .map(k => ({ key: k, plan: plans[k] }))
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -71,8 +73,8 @@ export function PlansPage() {
           >
             ← Back to dashboard
           </button>
-          <h1 className="text-3xl font-bold text-slate-900 mb-3">Choose Your Plan</h1>
-          <p className="text-slate-500">Unlock the full power of ShopIQ</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-3">Choose Your Plan</h1>
+          <p className="text-slate-500 dark:text-slate-400">Unlock the full power of ShopIQ</p>
         </div>
 
         {/* Plan cards */}
@@ -80,10 +82,12 @@ export function PlansPage() {
           {orderedPlans.map(({ key, plan }) => (
             <div
               key={key}
-              className={`bg-white rounded-2xl shadow-sm border p-8 relative flex flex-col ${
+              className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm border p-8 relative flex flex-col ${
                 key === 'pro'
                   ? 'border-brand-500 ring-2 ring-brand-500 shadow-md'
-                  : 'border-slate-200'
+                  : key === 'enterprise'
+                  ? 'border-purple-300 dark:border-purple-700'
+                  : 'border-slate-200 dark:border-slate-700'
               }`}
             >
               {key === 'pro' && (
@@ -95,15 +99,15 @@ export function PlansPage() {
               )}
 
               <div className="mb-6">
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">{plan.name}</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">{plan.name}</h2>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-slate-900">${plan.price}</span>
+                  <span className="text-4xl font-bold text-slate-900 dark:text-slate-100">${plan.price}</span>
                   {plan.price > 0 && (
-                    <span className="text-slate-400 text-sm">/month</span>
+                    <span className="text-slate-400 dark:text-slate-500 text-sm">/month</span>
                   )}
                 </div>
                 {plan.trial_days && (
-                  <p className="text-xs text-emerald-600 mt-1 font-medium">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
                     {plan.trial_days}-day free trial
                   </p>
                 )}
@@ -111,7 +115,7 @@ export function PlansPage() {
 
               <ul className="space-y-2.5 mb-8 flex-1">
                 {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
                     <span className="text-emerald-500 mt-0.5 flex-shrink-0">✓</span>
                     {feature}
                   </li>
@@ -123,12 +127,12 @@ export function PlansPage() {
                 disabled={loading || currentPlan === key}
                 className={`w-full py-2.5 rounded-xl text-sm font-semibold transition ${
                   currentPlan === key
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                     : key === 'pro'
                     ? 'bg-brand-600 text-white hover:bg-brand-700'
                     : key === 'enterprise'
-                    ? 'bg-slate-900 text-white hover:bg-slate-800'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'bg-slate-900 dark:bg-purple-700 text-white hover:bg-slate-800 dark:hover:bg-purple-600'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                 }`}
               >
                 {loading

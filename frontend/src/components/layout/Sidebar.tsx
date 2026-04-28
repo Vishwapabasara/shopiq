@@ -1,10 +1,18 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { authApi } from '../../lib/api'
+import { authApi, api } from '../../lib/api'
 import { cn } from '../../lib/utils'
+import { useTheme } from '../../contexts/ThemeContext'
 import logo from '../../assets/shopiq-lettermark-1200.png'
 
 // ── Inline SVG icons (no extra dependency) ────────────────────────────────────
+const PLAN_BADGE: Record<string, { label: string; cls: string }> = {
+  free:       { label: 'Free',       cls: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400' },
+  pro:        { label: 'Pro',        cls: 'bg-brand-50 text-brand-600 dark:bg-brand-900 dark:text-brand-400' },
+  enterprise: { label: 'Enterprise', cls: 'bg-purple-50 text-purple-600 dark:bg-purple-900 dark:text-purple-400' },
+  starter:    { label: 'Free',       cls: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400' },
+}
+
 const Icons = {
   audit: (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -77,6 +85,20 @@ const Icons = {
       <line x1="10" y1="14" x2="21" y2="3"/>
     </svg>
   ),
+  moon: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  ),
+  sun: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  ),
 }
 
 const NAV_ECOMMERCE = [
@@ -107,41 +129,62 @@ function buildStandaloneUrl() {
 
 export function Sidebar() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: authApi.me })
+  const { data: usageData } = useQuery({
+    queryKey: ['billing-usage'],
+    queryFn: () => api.get('/billing/usage').then(r => r.data),
+    staleTime: 60_000,
+  })
   const navigate = useNavigate()
+  const { theme, toggle } = useTheme()
 
   const initials = (me?.shop_name ?? 'SQ')
     .split(' ')
-    .map(w => w[0])
+    .map((w: string) => w[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
 
+  const plan = (me?.plan ?? 'free') as string
+  const badge = PLAN_BADGE[plan] ?? PLAN_BADGE.free
+
   return (
-    <aside className="w-56 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-screen sticky top-0">
+    <aside className="w-56 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-screen sticky top-0">
       {/* Logo */}
-      <div className="px-5 py-4 border-b border-slate-100">
+      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-2.5">
           <img src={logo} alt="ShopIQ" className="w-8 h-8 object-contain flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <span className="font-semibold text-slate-900 tracking-tight text-sm">ShopIQ</span>
-            <p className="text-[10px] text-slate-400 leading-tight">Shopify Intelligence</p>
+            <span className="font-semibold text-slate-900 dark:text-slate-100 tracking-tight text-sm">ShopIQ</span>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">Shopify Intelligence</p>
           </div>
-          <button
-            onClick={() => window.open(buildStandaloneUrl(), '_blank', 'noopener,noreferrer')}
-            className="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
-            title="Open in new tab"
-          >
-            {Icons.newTab}
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={toggle}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? Icons.sun : Icons.moon}
+            </button>
+            <button
+              onClick={() => window.open(buildStandaloneUrl(), '_blank', 'noopener,noreferrer')}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              title="Open in new tab"
+            >
+              {Icons.newTab}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Store pill */}
-      <div className="px-3 py-3 border-b border-slate-100">
-        <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
+      <div className="px-3 py-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-          <span className="text-xs text-slate-600 truncate font-medium">
+          <span className="text-xs text-slate-600 dark:text-slate-300 truncate font-medium flex-1 min-w-0">
             {me?.shop_name ?? me?.shop_domain ?? 'Your store'}
+          </span>
+          <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0', badge.cls)}>
+            {badge.label}
           </span>
         </div>
       </div>
@@ -152,21 +195,32 @@ export function Sidebar() {
         <NavSection label="Operations" items={NAV_OPS} />
       </nav>
 
+      {/* Usage quick-view for free plan */}
+      {(plan === 'free' || plan === 'starter') && usageData && (
+        <div className="px-3 pb-2">
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2.5 space-y-1.5">
+            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">This month</p>
+            <QuickUsageRow label="Audits" used={usageData.usage?.audits_used ?? 0} limit={usageData.limits?.audits_per_month ?? 10} />
+            <QuickUsageRow label="Copy AI" used={usageData.usage?.copy_generations_used ?? 0} limit={usageData.limits?.copy_generations_per_month ?? 10} />
+          </div>
+        </div>
+      )}
+
       {/* User footer */}
-      <div className="border-t border-slate-100 px-3 py-3">
+      <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-brand-700 text-xs font-semibold">{initials}</span>
+          <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center flex-shrink-0">
+            <span className="text-brand-700 dark:text-brand-300 text-xs font-semibold">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-700 truncate">
+            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
               {me?.shop_name ?? me?.shop_domain}
             </p>
-            <p className="text-xs text-slate-400 capitalize">{me?.plan ?? 'starter'} plan</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 capitalize">{badge.label} plan</p>
           </div>
           <button
             onClick={() => authApi.logout().then(() => navigate('/login'))}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
             title="Sign out"
           >
             {Icons.logout}
@@ -177,12 +231,28 @@ export function Sidebar() {
   )
 }
 
+function QuickUsageRow({ label, used, limit }: { label: string; used: number; limit: number }) {
+  const pct = limit === -1 ? 0 : Math.min((used / limit) * 100, 100)
+  const color = pct >= 90 ? 'bg-red-400' : pct >= 70 ? 'bg-amber-400' : 'bg-brand-400'
+  return (
+    <div>
+      <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-0.5">
+        <span>{label}</span>
+        <span>{used}/{limit === -1 ? '∞' : limit}</span>
+      </div>
+      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1">
+        <div className={`h-1 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
 type NavItem = { to: string; icon: React.ReactNode; label: string; active: boolean }
 
 function NavSection({ label, items }: { label: string; items: NavItem[] }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-2 mb-1.5">
+      <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-1.5">
         {label}
       </p>
       <div className="space-y-0.5">
@@ -213,8 +283,8 @@ function ActiveNavItem({ item }: { item: NavItem }) {
       className={({ isActive }) => cn(
         'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors',
         isActive
-          ? 'bg-brand-50 text-brand-700 font-medium'
-          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+          ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium'
+          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
       )}
     >
       <span className="flex-shrink-0 w-4 flex items-center justify-center">{item.icon}</span>
@@ -225,10 +295,10 @@ function ActiveNavItem({ item }: { item: NavItem }) {
 
 function ComingSoonItem({ item }: { item: NavItem }) {
   return (
-    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-slate-400 cursor-default">
+    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-slate-400 dark:text-slate-600 cursor-default">
       <span className="flex-shrink-0 w-4 flex items-center justify-center">{item.icon}</span>
       <span>{item.label}</span>
-      <span className="ml-auto text-[9px] font-medium bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100">
+      <span className="ml-auto text-[9px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded border border-amber-100 dark:border-amber-800">
         Soon
       </span>
     </div>

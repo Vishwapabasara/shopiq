@@ -177,7 +177,7 @@ async def get_current_charge(
     return data.get("data", {}).get("node")
 
 
-# ── Usage tracking (unchanged) ────────────────────────────────────────────────
+# ── Usage period helpers ──────────────────────────────────────────────────────
 
 def calculate_usage_period() -> tuple:
     now = datetime.utcnow()
@@ -189,65 +189,117 @@ def calculate_usage_period() -> tuple:
     return period_start, period_end
 
 
-async def check_usage_limits(tenant: Dict) -> Dict:
+def _resolve_plan(tenant: Dict) -> Dict:
     plan_type = tenant.get("plan", "free")
     if plan_type == "starter":
         plan_type = "free"
+    return PLANS.get(plan_type, PLANS["free"])
 
-    plan = PLANS.get(plan_type, PLANS.get("free"))
-    if not plan:
-        return {"allowed": False, "reason": "Invalid plan", "limits": {}, "usage": {}}
 
+# ── Generic limit check helper ────────────────────────────────────────────────
+
+def _check_limit(used: int, limit: int, reason: str, message: str, plan: Dict, usage: Dict) -> Optional[Dict]:
+    if limit != -1 and used >= limit:
+        return {
+            "allowed": False,
+            "reason": reason,
+            "message": message,
+            "limits": plan,
+            "usage": usage,
+        }
+    return None
+
+
+# ── Audit usage ───────────────────────────────────────────────────────────────
+
+async def check_usage_limits(tenant: Dict) -> Dict:
+    plan = _resolve_plan(tenant)
     usage = tenant.get("usage", {})
+
     audits_used = usage.get("audits_used_this_month", 0)
-    products_scanned = usage.get("products_scanned_this_month", 0)
     audit_limit = plan["audits_per_month"]
 
-    if audit_limit != -1 and audits_used >= audit_limit:
-        return {
-            "allowed": False,
-            "reason": "audit_limit_exceeded",
-            "message": f"You've used all {audit_limit} audits this month. Upgrade to run more.",
-            "limits": plan,
-            "usage": usage,
-        }
+    block = _check_limit(
+        audits_used, audit_limit,
+        "audit_limit_exceeded",
+        f"You've used all {audit_limit} audits this month. Upgrade to run more.",
+        plan, usage,
+    )
+    if block:
+        return block
 
-    product_limit = plan["max_products"]
-    if product_limit != -1 and products_scanned >= (product_limit * 2):
-        return {
-            "allowed": False,
-            "reason": "product_limit_exceeded",
-            "message": f"Product limit reached. Upgrade to scan more.",
-            "limits": plan,
-            "usage": usage,
-        }
-
-    return {
-        "allowed": True,
-        "warning": products_scanned >= product_limit if product_limit != -1 else False,
-        "limits": plan,
-        "usage": usage,
-    }
+    return {"allowed": True, "limits": plan, "usage": usage}
 
 
-async def increment_usage(tenant_id: ObjectId, audits: int = 0, products: int = 0):
+# ── Copy generation usage ─────────────────────────────────────────────────────
+
+async def check_copy_limit(tenant: Dict) -> Dict:
+    plan = _resolve_plan(tenant)
+    usage = tenant.get("usage", {})
+
+    used = usage.get("copy_generations_used_this_month", 0)
+    limit = plan.get("copy_generations_per_month", -1)
+
+    block = _check_limit(
+        used, limit,
+        "copy_limit_exceeded",
+        f"You've used all {limit} AI copy generations this month. Upgrade for more.",
+        plan, usage,
+    )
+    if block:
+        return block
+
+    return {"allowed": True, "limits": plan, "usage": usage}
+
+
+# ── AI fix usage ──────────────────────────────────────────────────────────────
+
+async def check_fix_limit(tenant: Dict) -> Dict:
+    plan = _resolve_plan(tenant)
+    usage = tenant.get("usage", {})
+
+    used = usage.get("ai_fixes_used_this_month", 0)
+    limit = plan.get("ai_fixes_per_month", -1)
+
+    block = _check_limit(
+        used, limit,
+        "fix_limit_exceeded",
+        f"You've used all {limit} AI fixes this month. Upgrade for more.",
+        plan, usage,
+    )
+    if block:
+        return block
+
+    return {"allowed": True, "limits": plan, "usage": usage}
+
+
+# ── Increment helpers ─────────────────────────────────────────────────────────
+
+async def increment_usage(tenant_id: ObjectId, audits: int = 0, products: int = 0,
+                          copy_generations: int = 0, ai_fixes: int = 0):
     from app.dependencies import get_db
     db = await get_db()
     period_start, period_end = calculate_usage_period()
-    await db.tenants.update_one(
-        {"_id": tenant_id},
-        {
-            "$inc": {
-                "usage.audits_used_this_month": audits,
-                "usage.products_scanned_this_month": products
-            },
-            "$set": {
-                "usage.period_start": period_start,
-                "usage.period_end": period_end,
-                "usage.last_updated": datetime.utcnow()
-            }
-        }
-    )
+
+    inc: Dict = {}
+    if audits:
+        inc["usage.audits_used_this_month"] = audits
+    if products:
+        inc["usage.products_scanned_this_month"] = products
+    if copy_generations:
+        inc["usage.copy_generations_used_this_month"] = copy_generations
+    if ai_fixes:
+        inc["usage.ai_fixes_used_this_month"] = ai_fixes
+
+    update: Dict = {"$set": {
+        "usage.period_start": period_start,
+        "usage.period_end": period_end,
+        "usage.last_updated": datetime.utcnow(),
+    }}
+    if inc:
+        update["$inc"] = inc
+
+    await db.tenants.update_one({"_id": tenant_id}, update)
 
 
 async def reset_monthly_usage():
@@ -259,9 +311,11 @@ async def reset_monthly_usage():
         {"$set": {
             "usage.audits_used_this_month": 0,
             "usage.products_scanned_this_month": 0,
+            "usage.copy_generations_used_this_month": 0,
+            "usage.ai_fixes_used_this_month": 0,
             "usage.period_start": period_start,
             "usage.period_end": period_end,
-            "usage.last_updated": datetime.utcnow()
+            "usage.last_updated": datetime.utcnow(),
         }}
     )
     logger.info(f"✅ Reset usage for {result.modified_count} tenants")

@@ -119,11 +119,46 @@ export interface AuthMe {
   missing_scopes?: string[]
 }
 
+export interface BillingUsage {
+  plan: string
+  limits: {
+    audits_per_month: number
+    copy_generations_per_month: number
+    ai_fixes_per_month: number
+    exports_per_month: number
+    audit_batch_size: number
+    history_audits: number
+  }
+  usage: {
+    audits_used: number
+    products_scanned: number
+    copy_generations_used: number
+    ai_fixes_used: number
+    period_start: string | null
+    period_end: string | null
+  }
+  scan_state: {
+    total_products: number
+    cursor: number
+    scanned_product_ids: string[]
+  }
+  subscription: {
+    status: string
+    trial_ends_at: string | null
+    cancel_at_period_end: boolean
+  }
+}
+
 // ── API calls ─────────────────────────────────────────────────────────────────
 
 export const authApi = {
   me: () => api.get<AuthMe>('/auth/me').then(r => r.data),
   logout: () => api.post('/auth/logout'),
+}
+
+export const billingApi = {
+  usage: () => api.get<BillingUsage>('/billing/usage').then(r => r.data),
+  plans: () => api.get<{ plans: Record<string, unknown> }>('/billing/plans').then(r => r.data),
 }
 
 // ── Returns types ─────────────────────────────────────────────────────────────

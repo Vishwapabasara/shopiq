@@ -28,7 +28,8 @@ def get_sync_db():
 
 
 @celery_app.task(bind=True, name='app.workers.audit_worker.run_audit_task')
-def run_audit_task(self: Task, audit_id: str, shop_domain: str, encrypted_token: str):
+def run_audit_task(self: Task, audit_id: str, shop_domain: str, encrypted_token: str,
+                   batch_size: int = 0):
     """Run product audit task in Celery worker"""
     logger.info(f"🚀 Task received for audit: {audit_id}")
     logger.info(f"📦 Shop: {shop_domain}")
@@ -54,7 +55,7 @@ def run_audit_task(self: Task, audit_id: str, shop_domain: str, encrypted_token:
 
         try:
             result = loop.run_until_complete(
-                _run_audit_async(audit_id, shop_domain, access_token, db)
+                _run_audit_async(audit_id, shop_domain, access_token, db, batch_size)
             )
             logger.info(f"✅ Audit {audit_id} completed successfully")
             return result
@@ -127,17 +128,39 @@ def _apply_severity_override(score: int, issues: list[dict]) -> list[dict]:
     return issues
 
 
-async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, db):
-    """Run the actual audit: fetch → rules → AI → save → notify."""
+async def _run_audit_async(audit_id: str, shop_domain: str, access_token: str, db,
+                           batch_size: int = 0):
+    """Run the actual audit: fetch → (batch) → rules → AI → save → notify."""
 
     # ── 1. Fetch products ────────────────────────────────────────────────────────
     logger.info(f"📦 Fetching products from Shopify for {shop_domain}...")
-    products = await fetch_all_products(shop_domain, access_token)
-    logger.info(f"✅ Fetched {len(products)} products")
+    all_products = await fetch_all_products(shop_domain, access_token)
+    logger.info(f"✅ Fetched {len(all_products)} products")
+
+    # ── 1b. Apply free-tier batch rotation if batch_size > 0 ─────────────────────
+    if batch_size > 0:
+        tenant = db.tenants.find_one({"shop_domain": shop_domain}, {"scan_state": 1})
+        scan_state = tenant.get("scan_state", {}) if tenant else {}
+        from app.services.scan_batching import get_product_batch
+        products, new_scan_state = get_product_batch(all_products, scan_state, batch_size)
+        db.tenants.update_one(
+            {"shop_domain": shop_domain},
+            {"$set": {"scan_state": new_scan_state}}
+        )
+        total_products = len(all_products)
+        logger.info(
+            f"🔄 Free-tier batch: scanning {len(products)}/{total_products} products"
+        )
+    else:
+        products = all_products
+        total_products = len(all_products)
 
     db.audits.update_one(
         {"_id": ObjectId(audit_id)},
-        {"$set": {"products_scanned": len(products)}}
+        {"$set": {
+            "products_scanned": len(products),
+            "total_store_products": total_products,
+        }}
     )
 
     # ── 2. Deterministic rules engine ────────────────────────────────────────────

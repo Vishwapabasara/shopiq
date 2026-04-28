@@ -32,28 +32,42 @@ async def get_plans():
 
 @router.get("/usage")
 async def get_usage(tenant: dict = Depends(get_current_tenant)):
-    """Get current usage and limits"""
+    """Get current usage and limits for all modules"""
     plan_type = tenant.get("plan", "free")
+    if plan_type == "starter":
+        plan_type = "free"
     plan = PLANS.get(plan_type, PLANS["free"])
     usage = tenant.get("usage", {})
+    scan_state = tenant.get("scan_state", {})
 
     return {
         "plan": plan_type,
         "limits": {
             "audits_per_month": plan["audits_per_month"],
-            "max_products": plan["max_products"],
+            "copy_generations_per_month": plan.get("copy_generations_per_month", -1),
+            "ai_fixes_per_month": plan.get("ai_fixes_per_month", -1),
+            "exports_per_month": plan.get("exports_per_month", -1),
+            "audit_batch_size": plan.get("audit_batch_size", 0),
+            "history_audits": plan.get("history_audits", -1),
         },
         "usage": {
             "audits_used": usage.get("audits_used_this_month", 0),
             "products_scanned": usage.get("products_scanned_this_month", 0),
+            "copy_generations_used": usage.get("copy_generations_used_this_month", 0),
+            "ai_fixes_used": usage.get("ai_fixes_used_this_month", 0),
             "period_start": usage.get("period_start"),
             "period_end": usage.get("period_end"),
+        },
+        "scan_state": {
+            "total_products": scan_state.get("total_products", 0),
+            "cursor": scan_state.get("cursor", 0),
+            "scanned_product_ids": scan_state.get("scanned_product_ids", []),
         },
         "subscription": {
             "status": tenant.get("subscription_status", "active"),
             "trial_ends_at": tenant.get("trial_ends_at"),
             "cancel_at_period_end": tenant.get("cancel_at_period_end", False),
-        }
+        },
     }
 
 

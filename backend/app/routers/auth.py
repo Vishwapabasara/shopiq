@@ -276,9 +276,18 @@ async def callback(
                 "usage": {
                     "audits_used_this_month": 0,
                     "products_scanned_this_month": 0,
+                    "copy_generations_used_this_month": 0,
+                    "ai_fixes_used_this_month": 0,
                     "period_start": period_start,
                     "period_end": period_end,
                     "last_updated": now,
+                },
+                "scan_state": {
+                    "cursor": 0,
+                    "scanned_product_ids": [],
+                    "all_known_product_ids": [],
+                    "last_scan_at": None,
+                    "total_products": 0,
                 },
             },
         },

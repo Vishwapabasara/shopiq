@@ -10,6 +10,7 @@ from app.models.schemas import AuditRunResponse, AuditStatusResponse, AuditStatu
 from app.workers.audit_worker import run_audit_task
 from app.utils.shopify_client import validate_scopes
 from app.services.billing import check_usage_limits, increment_usage
+from app.config import PLANS
 
 router = APIRouter(prefix="/audit", tags=["audit"])
 logger = logging.getLogger(__name__)
@@ -100,10 +101,17 @@ async def trigger_audit(tenant: dict = Depends(get_current_tenant)):
     logger.info(f"📝 Audit document created: {audit_id}")
 
     try:
+        plan_type = tenant.get("plan", "free")
+        if plan_type == "starter":
+            plan_type = "free"
+        plan_config = PLANS.get(plan_type, PLANS["free"])
+        batch_size = plan_config.get("audit_batch_size", 0)
+
         task = run_audit_task.delay(
             audit_id,
             tenant["shop_domain"],
             tenant["access_token"],
+            batch_size,
         )
         logger.info(f"✅ Celery task queued: {task.id}")
 

@@ -70,60 +70,70 @@ PLANS = {
     "free": {
         "name": "Free",
         "price": 0,
-        "audits_per_month": 6,
-        "max_products": 50,
+        # Monthly action limits (-1 = unlimited)
+        "audits_per_month": 10,
+        "copy_generations_per_month": 10,
+        "ai_fixes_per_month": 10,
+        "exports_per_month": 10,
+        "scheduled_checks_per_month": 0,
+        # Products scanned per audit run (0 = full scan)
+        "audit_batch_size": 10,
+        # Audit history entries shown
+        "history_audits": 1,
         "features": [
-            "6 audits per month",
-            "Up to 50 products",
-            "Basic scoring",
-            "Email support"
-        ]
-    },
-    "starter": {
-        "name": "Starter",
-        "price": 0,
-        "audits_per_month": 6,
-        "max_products": 50,
-        "features": [
-            "6 audits per month",
-            "Up to 50 products",
-            "Basic scoring",
-            "Email support"
-        ]
+            "10 audits per month",
+            "10 products scanned per audit (rotating batch)",
+            "10 AI copy generations per month",
+            "Basic score dashboard",
+            "Latest audit only",
+        ],
     },
     "pro": {
-        "name": "Professional",
+        "name": "Pro",
         "price": 29.00,
         "interval": "EVERY_30_DAYS",
-        "audits_per_month": 50,
-        "max_products": 1000,
         "trial_days": 7,
+        "audits_per_month": 100,
+        "copy_generations_per_month": 200,
+        "ai_fixes_per_month": 200,
+        "exports_per_month": 100,
+        "scheduled_checks_per_month": 100,
+        "audit_batch_size": 0,
+        "history_audits": -1,
         "features": [
-            "50 audits per month",
-            "Up to 1,000 products",
-            "AI-powered scoring",
-            "Email notifications",
-            "Scheduled audits",
+            "100 audits per month",
+            "Full product scan per audit",
+            "200 AI copy generations per month",
+            "200 AI fixes per month",
+            "Full audit history & charts",
+            "Product filtering & sorting",
+            "Scheduled monitoring",
+            "Export reports",
             "Priority support",
-            "Product detail analysis"
-        ]
+        ],
     },
     "enterprise": {
         "name": "Enterprise",
-        "price": 99.00,
+        "price": 199.00,
         "interval": "EVERY_30_DAYS",
-        "audits_per_month": -1,
-        "max_products": -1,
         "trial_days": 14,
+        "audits_per_month": -1,
+        "copy_generations_per_month": -1,
+        "ai_fixes_per_month": -1,
+        "exports_per_month": -1,
+        "scheduled_checks_per_month": -1,
+        "audit_batch_size": 0,
+        "history_audits": -1,
         "features": [
             "Unlimited audits",
-            "Unlimited products",
-            "AI-powered scoring",
-            "Scheduled audits (weekly/daily)",
-            "White-label PDF reports",
-            "API access",
+            "Unlimited AI copy generations",
+            "Unlimited AI fixes",
+            "Multi-store support",
+            "Team & user access",
+            "Priority processing queue",
+            "Custom reporting & PDF exports",
+            "API & webhook access",
             "Dedicated support",
-            "Custom integrations"
-        ]
-    }
+        ],
+    },
 }
