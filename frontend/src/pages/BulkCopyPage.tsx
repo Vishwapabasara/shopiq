@@ -360,13 +360,25 @@ function SetupCard({ onStart }: { onStart: (cfg: { filter_mode: string; max_prod
 function GeneratingView({
   session,
   sessionId,
+  onCancelled,
 }: {
   session: CopySession | null
   sessionId: string
+  onCancelled: () => void
 }) {
+  const qc = useQueryClient()
   const requested = session?.products_requested ?? 0
   const generated = session?.products_generated ?? 0
   const pct = requested > 0 ? Math.round((generated / requested) * 100) : 0
+
+  const cancel = useMutation({
+    mutationFn: () => copyApi.cancel(sessionId),
+    onSuccess: () => {
+      qc.setQueryData(['copy', 'latest'], null)
+      qc.removeQueries({ queryKey: ['copy', 'status', sessionId] })
+      onCancelled()
+    },
+  })
 
   return (
     <div className="flex-1 flex items-center justify-center p-8">
@@ -398,6 +410,15 @@ function GeneratingView({
             <p className="text-xs text-amber-800 italic">"{session.brand_voice.summary}"</p>
           </div>
         )}
+
+        <button
+          onClick={() => cancel.mutate()}
+          disabled={cancel.isPending}
+          className="mt-6 text-xs text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1.5 mx-auto"
+        >
+          {cancel.isPending ? <Spinner size={12} /> : <span>✕</span>}
+          Cancel and start over
+        </button>
       </div>
     </div>
   )
@@ -638,7 +659,13 @@ export function BulkCopyPage() {
       products_requested: statusData?.products_requested ?? latestSession?.products_requested ?? 0,
       products_generated: statusData?.products_generated ?? latestSession?.products_generated ?? 0,
     }
-    return <GeneratingView session={progressSession} sessionId={sessionId!} />
+    return (
+      <GeneratingView
+        session={progressSession}
+        sessionId={sessionId!}
+        onCancelled={() => setActiveSessionId(null)}
+      />
+    )
   }
 
   // Show setup

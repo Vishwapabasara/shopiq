@@ -77,6 +77,7 @@ async def generate(body: GenerateRequest, tenant: dict = Depends(get_current_ten
         "products_requested": 0,
         "products_generated": 0,
         "results": [],
+        "celery_task_id": None,
         "created_at": now,
         "completed_at": None,
         "error_message": None,
@@ -85,7 +86,7 @@ async def generate(body: GenerateRequest, tenant: dict = Depends(get_current_ten
     session_id = str(result.inserted_id)
 
     from app.workers.copy_worker import run_copy_task
-    run_copy_task.delay(
+    task = run_copy_task.delay(
         session_id,
         tenant["shop_domain"],
         tenant.get("access_token", ""),
@@ -93,6 +94,10 @@ async def generate(body: GenerateRequest, tenant: dict = Depends(get_current_ten
         body.filter_mode,
         body.max_products,
     )
+    await aw(db.copy_sessions.update_one(
+        {"_id": result.inserted_id},
+        {"$set": {"celery_task_id": task.id}},
+    ))
 
     logger.info(f"🚀 [BulkCopy] Session {session_id} queued for {tenant['shop_domain']}")
     return {
@@ -175,6 +180,35 @@ async def edit_product(
     if result.matched_count == 0:
         raise HTTPException(404, "Session or product not found")
     return {"success": True}
+
+
+# ── POST /copy/{id}/cancel ───────────────────────────────────────────────────
+
+@router.post("/{session_id}/cancel")
+async def cancel(session_id: str, tenant: dict = Depends(get_current_tenant)):
+    db = await get_db()
+    session = await aw(db.copy_sessions.find_one(
+        {"_id": ObjectId(session_id), "tenant_id": str(tenant["_id"])},
+    ))
+    if not session:
+        raise HTTPException(404, "Session not found")
+    if session["status"] not in ("queued", "running"):
+        return {"status": session["status"], "message": "Session already finished"}
+
+    celery_task_id = session.get("celery_task_id")
+    if celery_task_id:
+        try:
+            from app.workers.celery_app import celery_app
+            celery_app.control.revoke(celery_task_id, terminate=True, signal="SIGTERM")
+        except Exception:
+            pass
+
+    await aw(db.copy_sessions.update_one(
+        {"_id": ObjectId(session_id)},
+        {"$set": {"status": "failed", "error_message": "Cancelled by user"}},
+    ))
+    logger.info(f"🛑 [BulkCopy] Session {session_id} cancelled by user")
+    return {"status": "failed", "message": "Generation cancelled"}
 
 
 # ── POST /copy/{id}/push ──────────────────────────────────────────────────────

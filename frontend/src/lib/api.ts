@@ -357,6 +357,8 @@ export const copyApi = {
   results:  (id: string) => api.get<CopySession>(`/copy/${id}/results`).then(r => r.data),
   editProduct: (sessionId: string, productId: string, editedDescription: string) =>
     api.patch(`/copy/${sessionId}/product/${productId}`, { edited_description: editedDescription }),
+  cancel: (sessionId: string) =>
+    api.post<{ status: string; message: string }>(`/copy/${sessionId}/cancel`).then(r => r.data),
   push: (sessionId: string, productIds: string[]) =>
     api.post<{ success: boolean; pushed: number; total: number; results: Record<string, { success: boolean; error?: string }> }>(
       `/copy/${sessionId}/push`,
