@@ -9,7 +9,6 @@ import { ReturnsPage } from './pages/ReturnsPage'
 import { StockSensePage } from './pages/StockSensePage'
 import { PricePulsePage } from './pages/PricePulsePage'
 import { LoginPage } from './pages/LoginPage'
-import { ComingSoonPage } from './pages/ComingSoonPage'
 import { BulkCopyPage } from './pages/BulkCopyPage'
 import { ReviewReplyPage } from './pages/ReviewReplyPage'
 import { PlansPage } from './pages/PlansPage'
@@ -205,28 +204,8 @@ export default function App() {
             <Route path="/dashboard/stock" element={<StockSensePage />} />
             <Route path="/dashboard/returns" element={<ReturnsPage />} />
             <Route path="/dashboard/price" element={<PricePulsePage />} />
-            <Route path="/dashboard/price" element={
-              <ComingSoonPage module="PricePulse" icon="◉"
-                description="Daily competitor price monitoring across your catalogue. Alerts when you're undercut and suggests optimal price points based on your margin rules." />
-            } />
             <Route path="/dashboard/copy" element={<BulkCopyPage />} />
             <Route path="/dashboard/reviews" element={<ReviewReplyPage />} />
-            <Route path="/dashboard/leads" element={
-              <ComingSoonPage module="LeadForge" icon="◎"
-                description="B2B lead enrichment and outreach sequencer. Import a CSV of companies and get enriched contact data with AI-personalised cold emails ready to send." />
-            } />
-            <Route path="/dashboard/invoice" element={
-              <ComingSoonPage module="InvoiceFlow" icon="▤"
-                description="Automated invoicing with AI-written payment follow-up sequences. Stripe payment links embedded in every invoice — get paid faster, chase less." />
-            } />
-            <Route path="/dashboard/contract" element={
-              <ComingSoonPage module="ContractPilot" icon="◻"
-                description="AI contract risk analyser. Upload any PDF contract and get a plain-English breakdown of payment terms, IP clauses, red flags, and negotiation points." />
-            } />
-            <Route path="/dashboard/onboard" element={
-              <ComingSoonPage module="OnboardKit" icon="▷"
-                description="Branded client onboarding portals. Build drag-and-drop intake flows with file uploads, automated reminders, and kickoff scheduling — no more chasing clients." />
-            } />
 
             <Route path="/" element={<ShopifyNavigate to="/dashboard" />} />
           </Route>
