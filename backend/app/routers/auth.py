@@ -395,6 +395,38 @@ async def logout(request: Request):
     return {"success": True, "message": "Logged out successfully"}
 
 
+# ── GET /open-standalone ─────────────────────────────────────────────────────
+
+@router.get("/open-standalone")
+async def open_standalone(request: Request, shop: str = Query(...), host: str = Query(None)):
+    """
+    Navigating through this endpoint sets the session cookie in a first-party
+    context (user is visiting the backend domain directly), then redirects to
+    the React frontend. Solves cross-origin cookie issues for standalone / new-tab
+    access without relying on SameSite=None third-party cookie delivery.
+    """
+    if not _valid_shop(shop):
+        raise HTTPException(400, "Invalid shop domain")
+
+    db = await get_db()
+    tenant = await aw(db.tenants.find_one({"shop_domain": shop}))
+    if not tenant:
+        raise HTTPException(404, "Shop not installed — please open the app from your Shopify Admin")
+
+    tenant_id = str(tenant["_id"])
+    session_id = await create_db_session(shop_domain=shop, tenant_id=tenant_id, duration_days=30)
+
+    request.session["session_id"] = session_id
+    request.session["shop_domain"] = shop
+    request.session["tenant_id"] = tenant_id
+
+    logger.info(f"✅ Standalone session created for {shop}")
+
+    qs = urllib.parse.urlencode({k: v for k, v in {"shop": shop, "host": host or ""}.items() if v})
+    frontend_url = f"{settings.FRONTEND_URL}/dashboard{'?' + qs if qs else ''}"
+    return RedirectResponse(url=frontend_url, status_code=302)
+
+
 # ── GET /verify ───────────────────────────────────────────────────────────────
 
 @router.get("/verify")

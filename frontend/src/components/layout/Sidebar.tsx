@@ -49,11 +49,13 @@ const NAV_OPS = [
 function buildStandaloneUrl() {
   const shop = sessionStorage.getItem('shopiq_shop') || localStorage.getItem('shopiq_shop')
   const host = sessionStorage.getItem('shopiq_host') || localStorage.getItem('shopiq_host')
+  // Route through the backend so it sets a first-party session cookie before
+  // redirecting to the frontend — avoids third-party cookie issues in new tabs.
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://shopiq-production.up.railway.app'
   const qs = new URLSearchParams()
   if (shop) qs.set('shop', shop)
   if (host) qs.set('host', host)
-  const q = qs.toString()
-  return `${window.location.origin}${window.location.pathname}${q ? '?' + q : ''}`
+  return `${apiUrl}/auth/open-standalone?${qs.toString()}`
 }
 
 interface SidebarProps {
