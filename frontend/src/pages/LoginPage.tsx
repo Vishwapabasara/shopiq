@@ -1,5 +1,60 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import logo from '../assets/shopiq-lettermark-1200.png'
+
+function ShopInstallForm({ backendUrl }: { backendUrl: string }) {
+  const [shop, setShop] = useState('')
+  const [error, setError] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const handleInstall = () => {
+    const raw = shop.trim().toLowerCase().replace(/\.myshopify\.com$/, '')
+    if (!raw) {
+      setError('Please enter your store name.')
+      inputRef.current?.focus()
+      return
+    }
+    if (!/^[a-z0-9-]+$/.test(raw)) {
+      setError('Store name can only contain letters, numbers, and hyphens.')
+      return
+    }
+    setError('')
+    window.location.href = `${backendUrl}/auth/shopify/install?shop=${raw}.myshopify.com`
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="flex rounded-lg overflow-hidden border border-slate-200 focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 transition-all">
+          <input
+            ref={inputRef}
+            type="text"
+            value={shop}
+            onChange={e => { setShop(e.target.value); setError('') }}
+            onKeyDown={e => e.key === 'Enter' && handleInstall()}
+            placeholder="your-store-name"
+            className="flex-1 px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none bg-white"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <span className="flex items-center px-3 bg-slate-50 text-slate-400 text-sm border-l border-slate-200 select-none">
+            .myshopify.com
+          </span>
+        </div>
+        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      </div>
+      <button
+        onClick={handleInstall}
+        className="btn-primary w-full flex items-center justify-center gap-2"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Install ShopIQ
+      </button>
+    </div>
+  )
+}
 
 export function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -168,28 +223,21 @@ export function LoginPage() {
           </div>
         )}
 
-        {/* Shopify App Store install */}
-        <div className="card p-6 space-y-4 text-center">
-          <div>
+        {/* Shopify install via store name */}
+        <div className="card p-6 space-y-4">
+          <div className="text-center">
             <h2 className="font-semibold text-slate-800 mb-1">
               {isDev ? 'Install on a real store' : 'Install ShopIQ'}
             </h2>
             <p className="text-sm text-slate-500">
-              ShopIQ is available on the Shopify App Store. Install it directly from your Shopify Admin.
+              Enter your Shopify store name to get started.
             </p>
           </div>
-          <a
-            href="https://apps.shopify.com/shopiq"
-            className="btn-primary w-full flex items-center justify-center gap-2"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            View on Shopify App Store
-          </a>
-          <p className="text-xs text-slate-400">
-            Free audit up to 10 products. No credit card required.
+
+          <ShopInstallForm backendUrl={BACKEND_URL} />
+
+          <p className="text-xs text-slate-400 text-center">
+            Free — up to 10 uses per module. No credit card required.
           </p>
 
           {/* Debug info in dev */}
