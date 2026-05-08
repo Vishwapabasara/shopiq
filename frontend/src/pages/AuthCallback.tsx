@@ -24,7 +24,10 @@ export function AuthCallback() {
     // Carry shop (and host if present) into the URL so App Bridge can initialize.
     const params = new URLSearchParams({ shop })
     if (host) params.set('host', host)
-    navigate(`/dashboard?${params.toString()}`, { replace: true })
+    // Route new installs through onboarding — OnboardingPage handles returning users
+    const alreadyOnboarded = localStorage.getItem('shopiq_onboarded') === '1'
+    const dest = alreadyOnboarded ? '/dashboard' : '/onboarding'
+    navigate(`${dest}?${params.toString()}`, { replace: true })
   }, [])
 
   if (error) {

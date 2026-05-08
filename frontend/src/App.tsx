@@ -17,6 +17,7 @@ import { Spinner } from './components/ui'
 import { AuthCallback } from './pages/AuthCallback'
 import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { OnboardingPage } from './pages/OnboardingPage'
 
 // ── Shopify-param-preserving redirect ─────────────────────────────────────────
 // React Router's <Navigate> strips query params. This component copies
@@ -195,6 +196,9 @@ export default function App() {
 
         {/* ✅ Protected routes - auth required */}
         <Route element={<AuthGuard />}>
+          {/* Onboarding — full screen, no sidebar */}
+          <Route path="/onboarding" element={<OnboardingPage />} />
+
           {/* Plans page — full screen, no sidebar */}
           <Route path="/plans" element={<PlansPage />} />
 

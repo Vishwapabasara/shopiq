@@ -4,6 +4,7 @@ import { StockOverview } from '../components/stock/StockOverview'
 import { StockMatrix } from '../components/stock/StockMatrix'
 import { StockTable } from '../components/stock/StockTable'
 import { ReorderPanel } from '../components/stock/ReorderPanel'
+import { ShareCard } from '../components/stock/ShareCard'
 import { EmptyState, Spinner } from '../components/ui'
 import { UpgradeModal } from '../components/UpgradeModal'
 import { formatDate, formatTime } from '../lib/utils'
@@ -153,6 +154,23 @@ export function StockSensePage() {
               currency={results.currency}
               filterStatus={matrixFilter}
             />
+
+            {/* Shareable report card */}
+            <div className="card p-6">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">Share your report</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Download or copy a shareable image of your dead stock findings.
+                </p>
+              </div>
+              <ShareCard
+                deadStockValue={results.dead_stock_value}
+                skusDeadStock={results.skus_dead_stock}
+                totalInventoryValue={results.total_inventory_value}
+                skusUrgent={results.skus_urgent}
+                currency={results.currency || 'USD'}
+              />
+            </div>
           </>
         )}
       </div>
