@@ -107,7 +107,7 @@ function Card({ deadStockValue, skusDeadStock, totalInventoryValue, skusUrgent, 
           borderRadius: 14, padding: '16px 20px',
           border: '1px solid rgba(245,158,11,0.2)',
         }}>
-          <p style={{ fontSize: 11, color: '#92400e', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#d97706' }}>
+          <p style={{ fontSize: 11, color: '#d97706', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             At Risk of Stockout
           </p>
           <p style={{ fontSize: 22, fontWeight: 700, color: '#fbbf24' }}>
