@@ -21,8 +21,8 @@ export function ReorderPanel({ products, currency }: Props) {
     <div className="card px-5 py-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-sm font-semibold text-slate-800">Reorder Recommendations</p>
-          <p className="text-xs text-slate-400 mt-0.5">Prioritised by revenue at risk</p>
+          <p className="text-sm font-semibold text-zinc-800">Reorder Recommendations</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Prioritised by revenue at risk</p>
         </div>
         <span className="text-xs font-medium bg-red-50 text-red-700 border border-red-100 px-2 py-1 rounded-full">
           {urgent.filter(p => p.status === 'urgent').length} urgent
@@ -44,8 +44,8 @@ export function ReorderPanel({ products, currency }: Props) {
             >
               {/* Product */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-800 truncate">{p.title}</p>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-sm font-medium text-zinc-800 truncate">{p.title}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   {p.inventory_qty} units · {daysLeft} · {p.daily_velocity.toFixed(1)}/day
                 </p>
               </div>
@@ -54,7 +54,7 @@ export function ReorderPanel({ products, currency }: Props) {
               {p.revenue_at_risk > 0 && (
                 <div className="text-right flex-shrink-0">
                   <p className="text-xs text-red-600 font-semibold">{fmt(p.revenue_at_risk, currency)}</p>
-                  <p className="text-[10px] text-slate-400">at risk</p>
+                  <p className="text-[10px] text-zinc-400">at risk</p>
                 </div>
               )}
 
@@ -72,7 +72,7 @@ export function ReorderPanel({ products, currency }: Props) {
         })}
       </div>
 
-      <p className="mt-3 text-[10px] text-slate-400">
+      <p className="mt-3 text-[10px] text-zinc-400">
         * Reorder quantities are calculated using a 7-day assumed lead time + 30-day safety buffer.
       </p>
     </div>

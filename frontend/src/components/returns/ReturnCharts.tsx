@@ -22,7 +22,7 @@ const REASON_COLORS: Record<string, string> = {
   not_needed: '#64748b',
   fraud:      '#dc2626',
   exchange:   '#10b981',
-  other:      '#94a3b8',
+  other:      '#71717a',
 }
 
 interface Props { results: ReturnAnalysisResults }
@@ -42,25 +42,25 @@ export function ReturnCharts({ results }: Props) {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Reason breakdown */}
       <div className="card px-5 py-5">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
+        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-4">
           Return reasons
         </p>
         {reasons.length === 0 ? (
-          <p className="text-sm text-slate-400">No return reasons recorded.</p>
+          <p className="text-sm text-zinc-400">No return reasons recorded.</p>
         ) : (
           <div className="space-y-3">
             {reasons.map(([key, count]) => {
               const pct = Math.round(count / totalReasons * 100)
               return (
                 <div key={key}>
-                  <div className="flex justify-between text-xs text-slate-500 mb-1">
+                  <div className="flex justify-between text-xs text-zinc-500 mb-1">
                     <span>{REASON_LABELS[key] ?? key}</span>
-                    <span className="font-medium text-slate-700">{count} ({pct}%)</span>
+                    <span className="font-medium text-zinc-700">{count} ({pct}%)</span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-1.5">
+                  <div className="w-full bg-zinc-100 rounded-full h-1.5">
                     <div
                       className="h-1.5 rounded-full transition-all"
-                      style={{ width: `${pct}%`, backgroundColor: REASON_COLORS[key] ?? '#94a3b8' }}
+                      style={{ width: `${pct}%`, backgroundColor: REASON_COLORS[key] ?? '#71717a' }}
                     />
                   </div>
                 </div>
@@ -72,17 +72,17 @@ export function ReturnCharts({ results }: Props) {
 
       {/* Monthly trend */}
       <div className="card px-5 py-5">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
+        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-4">
           Return rate trend
         </p>
         {trendData.length < 2 ? (
-          <p className="text-sm text-slate-400">Not enough data for a trend chart yet.</p>
+          <p className="text-sm text-zinc-400">Not enough data for a trend chart yet.</p>
         ) : (
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} unit="%" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} unit="%" />
               <Tooltip
                 formatter={(v: number) => [`${v}%`, 'Return rate']}
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}

@@ -44,10 +44,10 @@ export function StockSensePage() {
       )}
 
       {/* Top bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
+      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
         <div>
-          <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">StockSense</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">StockSense</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
             {isComplete && results?.completed_at
               ? `Last analysed ${formatDate(results.completed_at)} at ${formatTime(results.completed_at)}`
               : isRunning
@@ -86,8 +86,8 @@ export function StockSensePage() {
             <div className="card px-6 py-8 flex flex-col items-center gap-4">
               <Spinner size={32} />
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-700">Scanning your inventory…</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Scanning your inventory…</p>
+                <p className="text-xs text-zinc-400 mt-1">
                   {statusData?.total_skus
                     ? `${statusData.total_skus} SKUs found so far`
                     : 'Fetching products and 60-day order history'
@@ -99,7 +99,7 @@ export function StockSensePage() {
               <button
                 onClick={cancelAnalysis}
                 disabled={isCancelling}
-                className="text-xs text-slate-400 hover:text-red-500 transition-colors underline underline-offset-2"
+                className="text-xs text-zinc-400 hover:text-red-500 transition-colors underline underline-offset-2"
               >
                 {isCancelling ? 'Cancelling…' : 'Cancel analysis'}
               </button>
@@ -158,8 +158,8 @@ export function StockSensePage() {
             {/* Shareable report card */}
             <div className="card p-6">
               <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">Share your report</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Share your report</h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   Download or copy a shareable image of your dead stock findings.
                 </p>
               </div>

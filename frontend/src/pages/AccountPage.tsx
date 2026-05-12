@@ -58,7 +58,7 @@ function MiniScoreRing({ score, size = 80 }: { score: number; size?: number }) {
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90 absolute inset-0">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth={sw} className="dark:stroke-slate-700" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e4e4e7" strokeWidth={sw} className="dark:stroke-zinc-700" />
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={sw}
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: 'stroke-dashoffset 0.8s ease-out' }} />
@@ -74,11 +74,11 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
   const display = limit === -1 ? '∞' : String(limit)
   return (
     <div>
-      <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+      <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-1.5">
         <span className="font-medium">{label}</span>
         <span className="tabular-nums">{used} / {display}</span>
       </div>
-      <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2">
+      <div className="w-full bg-zinc-100 dark:bg-zinc-700 rounded-full h-2">
         <div className={cn('h-2 rounded-full transition-all', color)} style={{ width: limit === -1 ? '100%' : `${pct}%` }} />
       </div>
     </div>
@@ -86,9 +86,9 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
 }
 
 const PLAN_STYLE: Record<string, { badge: string; button: string }> = {
-  free:       { badge: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300', button: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600' },
-  pro:        { badge: 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300', button: 'bg-brand-600 text-white hover:bg-brand-700' },
-  enterprise: { badge: 'bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300', button: 'bg-slate-900 dark:bg-purple-700 text-white hover:bg-slate-800 dark:hover:bg-purple-600' },
+  free:       { badge: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400', button: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700' },
+  pro:        { badge: 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300', button: 'bg-brand-200 text-brand-900 hover:bg-brand-300' },
+  enterprise: { badge: 'bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300', button: 'bg-zinc-900 dark:bg-purple-700 text-white hover:bg-zinc-800 dark:hover:bg-purple-600' },
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -161,12 +161,12 @@ export function AccountPage() {
   const isPastDue = subscription.status === 'past_due'
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex-1 flex flex-col min-h-screen bg-zinc-50 dark:bg-[#09090b]">
       {/* Top bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
+      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
         <div>
-          <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">Account</h1>
-          <p className="text-xs text-slate-400 mt-0.5">{shop_domain}</p>
+          <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Account</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">{shop_domain}</p>
         </div>
         <span className={cn('text-xs font-semibold px-2.5 py-1 rounded-full capitalize', planStyle.badge)}>
           {plan_config.name} plan
@@ -191,12 +191,12 @@ export function AccountPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* Latest score card */}
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center gap-3">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-6 flex flex-col items-center justify-center gap-3">
             {audit_stats.latest_score !== null ? (
               <>
                 <MiniScoreRing score={audit_stats.latest_score} size={96} />
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Current Score</p>
+                  <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Current Score</p>
                   {audit_stats.score_improvement !== null && (
                     <p className={cn(
                       'text-xs font-medium mt-0.5',
@@ -209,8 +209,8 @@ export function AccountPage() {
               </>
             ) : (
               <div className="text-center">
-                <p className="text-2xl mb-2 text-slate-300">◈</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">No audits yet</p>
+                <p className="text-2xl mb-2 text-zinc-300">◈</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">No audits yet</p>
                 <Link to="/dashboard" className="text-xs text-brand-600 dark:text-brand-400 font-medium mt-1 inline-block hover:underline">
                   Run your first audit →
                 </Link>
@@ -240,25 +240,26 @@ export function AccountPage() {
 
         {/* ── Score history chart ──────────────────────────────────────────────── */}
         {chartData.length >= 2 && (
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">Store Score Over Time</h2>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200 mb-4">Store Score Over Time</h2>
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:stroke-slate-700" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#71717a' }} tickLine={false} />
                 <Tooltip
                   contentStyle={{
                     fontSize: 12,
-                    border: '1px solid #e2e8f0',
-                    borderRadius: 8,
+                    border: '1px solid #27272a',
+                    borderRadius: 4,
                     boxShadow: 'none',
-                    backgroundColor: '#fff',
+                    backgroundColor: '#18181b',
+                    color: '#e4e4e7',
                   }}
                 />
                 <Line
-                  type="monotone" dataKey="score" stroke="#2563eb"
-                  strokeWidth={2.5} dot={{ r: 4, fill: '#2563eb', strokeWidth: 0 }}
+                  type="monotone" dataKey="score" stroke="#dfd1ff"
+                  strokeWidth={2.5} dot={{ r: 4, fill: '#dfd1ff', strokeWidth: 0 }}
                   activeDot={{ r: 5 }} name="Store Score"
                 />
               </LineChart>
@@ -267,29 +268,29 @@ export function AccountPage() {
         )}
 
         {/* ── Row 3: Achievements ──────────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Achievements</h2>
-            <span className="text-xs text-slate-400 dark:text-slate-500">{unlockedCount} / {achievements.length} unlocked</span>
+            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Achievements</h2>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">{unlockedCount} / {achievements.length} unlocked</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {achievements.map(a => (
               <div
                 key={a.id}
                 className={cn(
-                  'rounded-xl p-3 border text-center transition-all',
+                  'rounded p-3 border text-center transition-all',
                   a.unlocked
-                    ? 'bg-brand-50 dark:bg-brand-900/30 border-brand-100 dark:border-brand-800'
-                    : 'bg-slate-50 dark:bg-slate-700/30 border-slate-100 dark:border-slate-700 opacity-50'
+                    ? 'bg-brand-50 dark:bg-brand-200/10 border-brand-100 dark:border-brand-800/50'
+                    : 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 opacity-50'
                 )}
               >
                 <div className={cn('text-2xl mb-1.5', a.unlocked ? 'grayscale-0' : 'grayscale')}>
                   {a.icon}
                 </div>
-                <p className={cn('text-xs font-semibold leading-tight', a.unlocked ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500')}>
+                <p className={cn('text-xs font-semibold leading-tight', a.unlocked ? 'text-zinc-700 dark:text-zinc-200' : 'text-zinc-400 dark:text-zinc-500')}>
                   {a.title}
                 </p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight">
                   {a.description}
                 </p>
               </div>
@@ -298,11 +299,11 @@ export function AccountPage() {
         </div>
 
         {/* ── Row 4: Usage this month ──────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Usage This Month</h2>
+            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Usage This Month</h2>
             {usage.period_start && (
-              <span className="text-xs text-slate-400 dark:text-slate-500">
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">
                 Resets {new Date(new Date(usage.period_start).getFullYear(), new Date(usage.period_start).getMonth() + 1, 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             )}
@@ -319,24 +320,24 @@ export function AccountPage() {
         </div>
 
         {/* ── Row 5: Plan management ───────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">Your Plan</h2>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-5">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200 mb-4">Your Plan</h2>
 
           {/* Current plan summary */}
           <div className={cn(
-            'rounded-xl p-4 mb-5 border',
+            'rounded p-4 mb-5 border',
             plan === 'enterprise'
               ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
               : plan === 'pro'
               ? 'bg-brand-50 dark:bg-brand-900/20 border-brand-200 dark:border-brand-800'
-              : 'bg-slate-50 dark:bg-slate-700/40 border-slate-200 dark:border-slate-700'
+              : 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700'
           )}>
             <div className="flex items-center justify-between mb-2">
               <div>
                 <span className={cn('text-sm font-bold', planStyle.badge.split(' ').slice(2).join(' '))}>
                   {plan_config.name} Plan
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 ml-2">
                   {plan_config.price === 0 ? 'Free forever' : `$${plan_config.price}/month`}
                 </span>
               </div>
@@ -348,7 +349,7 @@ export function AccountPage() {
             </div>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
               {plan_config.features.map((f, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                <li key={i} className="flex items-start gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
                   <span className="text-emerald-500 mt-0.5 flex-shrink-0">✓</span>
                   {f}
                 </li>
@@ -373,10 +374,10 @@ export function AccountPage() {
                   onClick={() => handlePlanChange(pk)}
                   disabled={!!loadingPlan || isCurrent}
                   className={cn(
-                    'w-full py-3 px-4 rounded-xl text-sm font-semibold border transition-all relative flex flex-col items-center gap-0.5',
+                    'w-full py-3 px-4 rounded text-sm font-semibold border transition-all relative flex flex-col items-center gap-0.5',
                     isCurrent
                       ? 'border-transparent ring-2 ring-brand-500 cursor-default ' + ps.badge
-                      : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-brand-400 dark:hover:border-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50'
+                      : 'border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-brand-300 dark:hover:border-brand-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50'
                   )}
                 >
                   {isLoading && (
@@ -395,15 +396,15 @@ export function AccountPage() {
           </div>
 
           {plan !== 'free' && subscription.shopify_charge_id && (
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-3">
               Billing is managed through Shopify. To cancel, select the Free plan above.
             </p>
           )}
         </div>
 
         {/* ── Row 6: Account info ──────────────────────────────────────────────── */}
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">Account Info</h2>
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-5">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200 mb-4">Account Info</h2>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InfoRow label="Store name" value={shop_name} />
             <InfoRow label="Shop domain" value={shop_domain} />
@@ -428,13 +429,13 @@ function StatTile({
     ? 'text-emerald-600 dark:text-emerald-400'
     : accent === 'blue'
     ? 'text-brand-600 dark:text-brand-400'
-    : 'text-slate-900 dark:text-slate-100'
+    : 'text-zinc-900 dark:text-zinc-100'
 
   return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-slate-300 dark:text-slate-600 text-base">{icon}</span>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{label}</p>
+        <span className="text-zinc-300 dark:text-zinc-600 text-base">{icon}</span>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{label}</p>
       </div>
       <p className={cn('text-2xl font-bold tabular-nums', valueColor)}>{value}</p>
     </div>
@@ -444,8 +445,8 @@ function StatTile({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-0.5">{label}</dt>
-      <dd className="text-sm text-slate-700 dark:text-slate-200 font-medium">{value}</dd>
+      <dt className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-0.5">{label}</dt>
+      <dd className="text-sm text-zinc-700 dark:text-zinc-200 font-medium">{value}</dd>
     </div>
   )
 }

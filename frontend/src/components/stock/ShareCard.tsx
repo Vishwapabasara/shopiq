@@ -225,7 +225,7 @@ export function ShareCard(props: ShareCardProps) {
         <button
           onClick={handleCopy}
           disabled={busy}
-          className="flex-1 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded transition-colors"
         >
           {status === 'copied' ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -240,7 +240,7 @@ export function ShareCard(props: ShareCardProps) {
         </button>
       </div>
 
-      <p className="text-xs text-slate-500 text-center">
+      <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center">
         Share on Reddit, Twitter, or LinkedIn to show what you found
       </p>
     </div>

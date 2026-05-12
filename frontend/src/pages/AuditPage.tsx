@@ -92,10 +92,10 @@ export function AuditPage() {
       )}
 
       {/* Top bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
+      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
         <div>
-          <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">ShopAudit AI</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">ShopAudit AI</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
             {isComplete && statusData?.completed_at
               ? `Last audited ${formatDate(statusData.completed_at)} at ${formatTime(statusData.completed_at)}`
               : isRunning
@@ -246,7 +246,7 @@ function LockedFeatureCard({
   plan: 'Pro' | 'Enterprise'
 }) {
   return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-4 relative overflow-hidden">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-5 py-4 relative overflow-hidden">
       <div className="absolute top-3 right-3">
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded
           ${plan === 'Enterprise'
@@ -257,10 +257,10 @@ function LockedFeatureCard({
         </span>
       </div>
       <div className="flex items-start gap-3 mb-2 pr-12">
-        <span className="text-lg text-slate-300 dark:text-slate-600 flex-shrink-0">{icon}</span>
+        <span className="text-lg text-zinc-300 dark:text-zinc-600 flex-shrink-0">{icon}</span>
         <div>
-          <h3 className="text-sm font-semibold text-slate-400 dark:text-slate-500">{title}</h3>
-          <p className="text-xs text-slate-400 dark:text-slate-600 mt-0.5 leading-relaxed">{description}</p>
+          <h3 className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">{title}</h3>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 leading-relaxed">{description}</p>
         </div>
       </div>
       <Link

@@ -153,14 +153,14 @@ function DashboardShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-zinc-50 dark:bg-[#09090b]">
       <Sidebar mobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-30">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+            className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
             aria-label="Open menu"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -169,7 +169,7 @@ function DashboardShell() {
               <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
-          <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">ShopIQ</span>
+          <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">ShopIQ</span>
         </div>
         <GlobalBanners />
         <Outlet />

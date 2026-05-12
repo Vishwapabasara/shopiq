@@ -34,7 +34,7 @@ function Quadrant({ label, tagline, count, metric, metricLabel, colors, selected
     <button
       onClick={onClick}
       className={`
-        text-left p-4 rounded-xl border-2 transition-all duration-150
+        text-left p-4 rounded border-2 transition-all duration-150
         ${colors.bg} ${selected ? colors.border + ' shadow-sm' : 'border-transparent'}
         hover:${colors.border} hover:shadow-sm
       `}
@@ -45,11 +45,11 @@ function Quadrant({ label, tagline, count, metric, metricLabel, colors, selected
           {count} SKU{count !== 1 ? 's' : ''}
         </span>
       </div>
-      <p className="text-xs text-slate-500 mb-3 leading-relaxed">{tagline}</p>
+      <p className="text-xs text-zinc-500 mb-3 leading-relaxed">{tagline}</p>
       {metric && (
         <div>
           <p className={`text-lg font-semibold tabular-nums ${colors.label}`}>{metric}</p>
-          <p className="text-[10px] text-slate-400">{metricLabel}</p>
+          <p className="text-[10px] text-zinc-400">{metricLabel}</p>
         </div>
       )}
     </button>
@@ -131,13 +131,13 @@ export function StockMatrix({ results, selected, onSelect }: Props) {
     <div className="card px-5 py-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-sm font-semibold text-slate-800">Inventory Health Matrix</p>
-          <p className="text-xs text-slate-400 mt-0.5">Click a quadrant to filter the product table</p>
+          <p className="text-sm font-semibold text-zinc-800">Inventory Health Matrix</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Click a quadrant to filter the product table</p>
         </div>
         {selected && (
           <button
             onClick={() => onSelect(null)}
-            className="text-xs text-slate-400 hover:text-slate-700 underline underline-offset-2 transition-colors"
+            className="text-xs text-zinc-400 hover:text-zinc-700 underline underline-offset-2 transition-colors"
           >
             Clear filter
           </button>
@@ -146,7 +146,7 @@ export function StockMatrix({ results, selected, onSelect }: Props) {
 
       {/* Axis labels */}
       <div className="relative">
-        <div className="absolute -left-4 top-1/2 -translate-y-1/2 -rotate-90 text-[9px] font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+        <div className="absolute -left-4 top-1/2 -translate-y-1/2 -rotate-90 text-[9px] font-semibold text-zinc-400 uppercase tracking-widest whitespace-nowrap">
           Demand velocity
         </div>
         <div className="pl-2">
@@ -170,19 +170,19 @@ export function StockMatrix({ results, selected, onSelect }: Props) {
               />
             ))}
           </div>
-          <div className="mt-2 text-center text-[9px] font-semibold text-slate-400 uppercase tracking-widest">
+          <div className="mt-2 text-center text-[9px] font-semibold text-zinc-400 uppercase tracking-widest">
             Days of stock remaining →
           </div>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-4">
+      <div className="mt-4 pt-4 border-t border-zinc-100 flex flex-wrap gap-4">
         {quadrants.map(q => (
           <div key={q.status} className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${q.colors.dot}`} />
-            <span className="text-xs text-slate-500">{q.label}</span>
-            <span className="text-xs font-semibold text-slate-700">{q.count}</span>
+            <span className="text-xs text-zinc-500">{q.label}</span>
+            <span className="text-xs font-semibold text-zinc-700">{q.count}</span>
           </div>
         ))}
       </div>

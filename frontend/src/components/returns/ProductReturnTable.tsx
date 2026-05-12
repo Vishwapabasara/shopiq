@@ -24,23 +24,23 @@ export function ProductReturnTable({ products, currency }: Props) {
   if (products.length === 0) {
     return (
       <div className="card px-6 py-8 text-center">
-        <p className="text-sm text-slate-400">No product-level return data available.</p>
+        <p className="text-sm text-zinc-400">No product-level return data available.</p>
       </div>
     )
   }
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+      <div className="px-5 py-3 border-b border-zinc-100 flex items-center justify-between">
+        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">
           Top returned products
         </p>
-        <p className="text-xs text-slate-400">{products.length} products</p>
+        <p className="text-xs text-zinc-400">{products.length} products</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-100 text-xs text-slate-500 font-medium">
+            <tr className="bg-zinc-50 border-b border-zinc-100 text-xs text-zinc-500 font-medium">
               <th className="text-left px-5 py-3">Product</th>
               <th className="text-right px-4 py-3">Orders</th>
               <th className="text-right px-4 py-3">Returns</th>
@@ -49,28 +49,28 @@ export function ProductReturnTable({ products, currency }: Props) {
               <th className="text-left px-4 py-3">Top reason</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-zinc-50">
             {products.map(p => (
-              <tr key={p.product_id} className="hover:bg-slate-50/60 transition-colors">
+              <tr key={p.product_id} className="hover:bg-zinc-50/60 transition-colors">
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.title} className="w-8 h-8 object-cover rounded flex-shrink-0 bg-slate-100" />
+                      <img src={p.image_url} alt={p.title} className="w-8 h-8 object-cover rounded flex-shrink-0 bg-zinc-100" />
                     ) : (
-                      <div className="w-8 h-8 rounded bg-slate-100 flex-shrink-0 flex items-center justify-center text-slate-300 text-xs">◈</div>
+                      <div className="w-8 h-8 rounded bg-zinc-100 flex-shrink-0 flex items-center justify-center text-zinc-300 text-xs">◈</div>
                     )}
-                    <span className="font-medium text-slate-800 truncate max-w-[180px]">{p.title}</span>
+                    <span className="font-medium text-zinc-800 truncate max-w-[180px]">{p.title}</span>
                   </div>
                 </td>
-                <td className="text-right px-4 py-3 text-slate-600">{p.total_orders}</td>
-                <td className="text-right px-4 py-3 text-slate-600">{p.total_returns}</td>
+                <td className="text-right px-4 py-3 text-zinc-600">{p.total_orders}</td>
+                <td className="text-right px-4 py-3 text-zinc-600">{p.total_returns}</td>
                 <td className="text-right px-4 py-3">
                   <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${rateColor(p.return_rate)}`}>
                     {p.return_rate}%
                   </span>
                 </td>
-                <td className="text-right px-4 py-3 text-slate-600">{fmt(p.refund_value)}</td>
-                <td className="px-4 py-3 text-slate-500 text-xs">
+                <td className="text-right px-4 py-3 text-zinc-600">{fmt(p.refund_value)}</td>
+                <td className="px-4 py-3 text-zinc-500 text-xs">
                   {REASON_LABELS[p.top_reason] ?? p.top_reason}
                 </td>
               </tr>

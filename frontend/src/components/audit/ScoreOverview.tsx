@@ -25,15 +25,15 @@ export function ScoreOverview({ results }: Props) {
           {/* Score ring */}
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <ScoreRing score={overall_score} size={140} strokeWidth={10} />
-            <span className="text-sm font-medium text-slate-600">{scoreLabel(overall_score)}</span>
+            <span className="text-sm font-medium text-zinc-600">{scoreLabel(overall_score)}</span>
             {completed_at && (
-              <span className="text-xs text-slate-400">Audited {formatDate(completed_at)}</span>
+              <span className="text-xs text-zinc-400">Audited {formatDate(completed_at)}</span>
             )}
           </div>
 
           {/* Category bars */}
           <div className="flex-1 w-full space-y-4 pt-1">
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+            <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
               Score by category
             </h2>
             {Object.entries(category_scores).map(([cat, score]) => (

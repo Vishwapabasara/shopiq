@@ -6,16 +6,16 @@ function StatCard({
   label, value, sub, accent = 'default',
 }: { label: string; value: string; sub?: string; accent?: 'default' | 'red' | 'amber' | 'green' }) {
   const colors = {
-    default: 'text-slate-900',
+    default: 'text-zinc-900',
     red:     'text-red-600',
     amber:   'text-amber-600',
     green:   'text-emerald-600',
   }
   return (
     <div className="card px-5 py-4">
-      <p className="text-xs text-slate-400 font-medium mb-1">{label}</p>
+      <p className="text-xs text-zinc-400 font-medium mb-1">{label}</p>
       <p className={`text-2xl font-bold ${colors[accent]}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-zinc-400 mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -30,7 +30,7 @@ function RateRing({ rate }: { rate: number }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <svg width={108} height={108} viewBox="0 0 108 108">
-        <circle cx={54} cy={54} r={r} fill="none" stroke="#f1f5f9" strokeWidth={10} />
+        <circle cx={54} cy={54} r={r} fill="none" stroke="#27272a" strokeWidth={10} />
         <circle
           cx={54} cy={54} r={r} fill="none"
           stroke={color} strokeWidth={10}
@@ -42,11 +42,11 @@ function RateRing({ rate }: { rate: number }) {
         <text x={54} y={50} textAnchor="middle" fontSize={20} fontWeight="700" fill={color}>
           {rate}%
         </text>
-        <text x={54} y={66} textAnchor="middle" fontSize={10} fill="#94a3b8">
+        <text x={54} y={66} textAnchor="middle" fontSize={10} fill="#71717a">
           return rate
         </text>
       </svg>
-      <p className="text-xs font-medium text-slate-500">
+      <p className="text-xs font-medium text-zinc-500">
         {rate < 10 ? '✅ Excellent' : rate < 20 ? '⚠️ Average' : '❌ High'}
       </p>
     </div>

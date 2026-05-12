@@ -29,10 +29,10 @@ export function ScopeErrorModal({ missingScopes, shopDomain, onClose }: ScopeErr
           <span className="text-2xl">🔐</span>
         </div>
 
-        <h2 className="text-lg font-semibold text-slate-900 text-center mb-2">
+        <h2 className="text-lg font-semibold text-zinc-900 text-center mb-2">
           Permissions need updating
         </h2>
-        <p className="text-sm text-slate-500 text-center mb-5">
+        <p className="text-sm text-zinc-500 text-center mb-5">
           ShopIQ needs additional permissions to audit your store. This takes just a few seconds to fix.
         </p>
 
@@ -60,7 +60,7 @@ export function ScopeErrorModal({ missingScopes, shopDomain, onClose }: ScopeErr
           </a>
           <button
             onClick={onClose}
-            className="text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors"
+            className="text-sm text-zinc-400 hover:text-zinc-600 py-2 transition-colors"
           >
             Cancel
           </button>

@@ -9,7 +9,7 @@ function Stars({ rating }: { rating: number }) {
   return (
     <span className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map(i => (
-        <span key={i} className={`text-sm ${i <= rating ? 'text-amber-400' : 'text-slate-200'}`}>★</span>
+        <span key={i} className={`text-sm ${i <= rating ? 'text-amber-400' : 'text-zinc-200'}`}>★</span>
       ))}
     </span>
   )
@@ -19,7 +19,7 @@ function Stars({ rating }: { rating: number }) {
 
 const SENTIMENT_STYLE = {
   positive: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  neutral:  'bg-slate-100 text-slate-600',
+  neutral:  'bg-zinc-100 text-zinc-600',
   negative: 'bg-red-50 text-red-600 border border-red-200',
 }
 
@@ -35,7 +35,7 @@ function SentimentBadge({ sentiment }: { sentiment: string | null }) {
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 const STATUS_STYLE: Record<string, string> = {
-  pending:  'bg-slate-100 text-slate-500',
+  pending:  'bg-zinc-100 text-zinc-500',
   approved: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   rejected: 'bg-red-50 text-red-500',
   posted:   'bg-brand-50 text-brand-700 border border-brand-200',
@@ -84,7 +84,7 @@ function ReviewCard({
   })
 
   return (
-    <div className={`bg-white border rounded-2xl overflow-hidden transition-opacity ${localStatus === 'rejected' ? 'opacity-40' : 'border-slate-200'} ${review.is_escalation ? 'border-red-300 ring-1 ring-red-200' : ''}`}>
+    <div className={`bg-white dark:bg-zinc-900 border rounded overflow-hidden transition-opacity ${localStatus === 'rejected' ? 'opacity-40' : 'border-zinc-200 dark:border-zinc-800'} ${review.is_escalation ? 'border-red-300 dark:border-red-800 ring-1 ring-red-200' : ''}`}>
       {/* Escalation banner */}
       {review.is_escalation && (
         <div className="px-4 py-2 bg-red-50 border-b border-red-200 flex items-center gap-2">
@@ -110,8 +110,8 @@ function ReviewCard({
                 <SentimentBadge sentiment={review.sentiment} />
                 <StatusBadge status={displayStatus} />
               </div>
-              <p className="text-xs font-semibold text-slate-700 mt-1">{review.author}</p>
-              <p className="text-[11px] text-slate-400">{review.date}</p>
+              <p className="text-xs font-semibold text-zinc-700 mt-1">{review.author}</p>
+              <p className="text-[11px] text-zinc-400">{review.date}</p>
             </div>
           </div>
 
@@ -120,20 +120,20 @@ function ReviewCard({
               {review.product_image && (
                 <img src={review.product_image} alt="" className="w-6 h-6 rounded object-cover flex-shrink-0" />
               )}
-              <span className="text-[11px] text-slate-500 truncate">{review.product_title}</span>
+              <span className="text-[11px] text-zinc-500 truncate">{review.product_title}</span>
             </div>
           )}
 
           {review.title && (
-            <p className="text-sm font-medium text-slate-800">"{review.title}"</p>
+            <p className="text-sm font-medium text-zinc-800">"{review.title}"</p>
           )}
-          <p className="text-sm text-slate-600 leading-relaxed">{review.body}</p>
+          <p className="text-sm text-zinc-600 leading-relaxed">{review.body}</p>
         </div>
 
         {/* ── Right: AI Response ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">AI Response</p>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">AI Response</p>
             {!editing && !isPosted && (
               <button
                 onClick={() => { setEditing(true); setEditText(activeResponse) }}
@@ -150,25 +150,25 @@ function ReviewCard({
                 value={editText}
                 onChange={e => setEditText(e.target.value)}
                 rows={4}
-                className="w-full border border-brand-300 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-200 resize-none"
+                className="w-full border border-brand-300 rounded p-3 text-sm text-zinc-700 dark:text-zinc-300 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-brand-200 resize-none"
               />
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => saveEdit.mutate()}
                   disabled={saveEdit.isPending}
-                  className="text-xs px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium flex items-center gap-1"
+                  className="text-xs px-3 py-1.5 bg-brand-200 text-brand-900 rounded hover:bg-brand-300 font-medium flex items-center gap-1"
                 >
                   {saveEdit.isPending && <Spinner size={12} />}
                   Save & Approve
                 </button>
-                <button onClick={() => setEditing(false)} className="text-xs px-3 py-1.5 border border-slate-200 text-slate-500 rounded-lg hover:bg-slate-50">
+                <button onClick={() => setEditing(false)} className="text-xs px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800">
                   Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <div className={`p-3.5 rounded-xl text-sm text-slate-700 leading-relaxed border ${review.edited_response ? 'border-brand-200 bg-brand-50/30' : 'border-slate-100 bg-slate-50'}`}>
-              {activeResponse || <span className="italic text-slate-300">No response generated</span>}
+            <div className={`p-3.5 rounded text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed border ${review.edited_response ? 'border-brand-200 bg-brand-50/30 dark:bg-brand-200/5' : 'border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50'}`}>
+              {activeResponse || <span className="italic text-zinc-300 dark:text-zinc-600">No response generated</span>}
               {review.edited_response && (
                 <p className="text-[10px] text-brand-500 mt-1.5 font-medium">Edited</p>
               )}
@@ -180,7 +180,7 @@ function ReviewCard({
               {localStatus !== 'approved' && (
                 <button
                   onClick={() => onStatusChange('approved')}
-                  className="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium transition-colors"
+                  className="text-[11px] px-3 py-1.5 rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium transition-colors"
                 >
                   Approve
                 </button>
@@ -188,7 +188,7 @@ function ReviewCard({
               {localStatus !== 'rejected' && (
                 <button
                   onClick={() => onStatusChange('rejected')}
-                  className="text-[11px] px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-600 font-medium transition-colors"
+                  className="text-[11px] px-3 py-1.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-red-50 hover:text-red-600 font-medium transition-colors"
                 >
                   Reject
                 </button>
@@ -224,18 +224,18 @@ function GeneratingView({ batch, batchId, onCancelled }: { batch: ReviewBatch | 
         <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-5">
           <Spinner size={28} />
         </div>
-        <h2 className="text-lg font-semibold text-slate-800 mb-1">Writing your responses...</h2>
-        <p className="text-sm text-slate-500 mb-6">
+        <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Writing your responses...</h2>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
           {done > 0 ? <>{done} of {total} responses written</> : 'Detecting brand voice and analysing reviews...'}
         </p>
-        <div className="w-full bg-slate-100 rounded-full h-2 mb-3 overflow-hidden">
+        <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2 mb-3 overflow-hidden">
           <div className="h-2 bg-brand-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
         </div>
-        <p className="text-xs text-slate-400">{pct}% complete</p>
+        <p className="text-xs text-zinc-400">{pct}% complete</p>
         <button
           onClick={() => cancel.mutate()}
           disabled={cancel.isPending}
-          className="mt-6 text-xs text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1.5 mx-auto"
+          className="mt-6 text-xs text-zinc-400 hover:text-red-500 transition-colors flex items-center gap-1.5 mx-auto"
         >
           {cancel.isPending ? <Spinner size={12} /> : <span>✕</span>}
           Cancel
@@ -252,8 +252,8 @@ function SetupView({ onSeedDemo }: { onSeedDemo: () => void }) {
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="w-full max-w-lg text-center">
         <span className="text-3xl">★</span>
-        <h1 className="mt-3 text-2xl font-semibold text-slate-900">ReviewReply Pro</h1>
-        <p className="mt-2 text-slate-500 text-sm leading-relaxed">
+        <h1 className="mt-3 text-2xl font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">ReviewReply Pro</h1>
+        <p className="mt-2 text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
           AI-generated review responses written in your brand voice. Sentiment-aware, escalation-flagged, and ready to post in one click.
         </p>
 
@@ -263,22 +263,22 @@ function SetupView({ onSeedDemo }: { onSeedDemo: () => void }) {
             { icon: '⚠️', label: 'Escalation Flags', desc: 'Auto-detects refund demands & legal threats' },
             { icon: '🧬', label: 'Brand Voice', desc: 'Reuses your BulkCopy AI brand fingerprint' },
           ].map(f => (
-            <div key={f.label} className="bg-slate-50 rounded-xl p-3 text-center border border-slate-100">
+            <div key={f.label} className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-3 text-center border border-zinc-100 dark:border-zinc-700">
               <p className="text-xl mb-1">{f.icon}</p>
-              <p className="text-[11px] font-semibold text-slate-700 leading-tight">{f.label}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{f.desc}</p>
+              <p className="text-[11px] font-semibold text-zinc-700 leading-tight">{f.label}</p>
+              <p className="text-[10px] text-zinc-400 mt-0.5 leading-tight">{f.desc}</p>
             </div>
           ))}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-5 space-y-4">
           <button
             onClick={onSeedDemo}
-            className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-brand-200 hover:bg-brand-300 text-brand-900 rounded font-semibold text-sm transition-colors flex items-center justify-center gap-2"
           >
             <span>★</span> Load Demo Reviews & Generate Responses
           </button>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-zinc-400">
             Loads 8 realistic reviews with mixed ratings. Platform integrations (Google, Trustpilot) coming soon.
           </p>
         </div>
@@ -338,41 +338,41 @@ function ReviewQueueView({ batch, onReset }: { batch: ReviewBatch; onReset: () =
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+      <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between flex-shrink-0">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-lg">★</span>
-            <h1 className="text-base font-semibold text-slate-800">ReviewReply Pro</h1>
+            <h1 className="text-base font-semibold text-zinc-800 dark:text-zinc-100 tracking-tight">ReviewReply Pro</h1>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
             {reviews.length} reviews · {reviews.filter(r => r.status === 'posted').length} posted
             {batch.brand_voice && <> · Voice: <em>{batch.brand_voice.tone}</em></>}
           </p>
         </div>
         <button
           onClick={onReset}
-          className="text-xs px-3 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg font-medium"
+          className="text-xs px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded font-medium"
         >
           Reload
         </button>
       </div>
 
       {/* Filter tabs */}
-      <div className="px-6 border-b border-slate-100 bg-white flex gap-1 flex-shrink-0">
+      <div className="px-6 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex gap-1 flex-shrink-0">
         {FILTER_TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-3 py-2.5 text-xs font-medium capitalize border-b-2 transition-colors flex items-center gap-1.5 ${
               activeTab === tab
-                ? 'border-brand-600 text-brand-700'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-brand-600 text-brand-700 dark:text-brand-300'
+                : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
             }`}
           >
             {tab === 'escalations' ? '⚠ ' : ''}
             {tab}
             {tabCounts[tab] > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === tab ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-500'}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${activeTab === tab ? 'bg-brand-100 dark:bg-brand-200/15 text-brand-700 dark:text-brand-300' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'}`}>
                 {tabCounts[tab]}
               </span>
             )}
@@ -391,7 +391,7 @@ function ReviewQueueView({ batch, onReset }: { batch: ReviewBatch; onReset: () =
       {/* Cards */}
       <div className="flex-1 overflow-auto px-6 py-4 space-y-3">
         {filteredReviews.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 text-sm">No reviews in this category</div>
+          <div className="text-center py-12 text-zinc-400 text-sm">No reviews in this category</div>
         ) : (
           filteredReviews.map(review => (
             <ReviewCard
@@ -421,20 +421,20 @@ function ReviewQueueView({ batch, onReset }: { batch: ReviewBatch; onReset: () =
       </div>
 
       {/* Sticky post bar */}
-      <div className="flex-shrink-0 px-6 py-4 bg-white border-t border-slate-200 flex items-center justify-between">
+      <div className="flex-shrink-0 px-6 py-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
         {allPosted ? (
           <p className="text-sm text-emerald-600 font-medium flex items-center gap-1.5">
             <span>✓</span> All responses posted
           </p>
         ) : (
-          <p className="text-sm text-slate-500">
-            <span className="font-semibold text-slate-800">{pendingToPost.length}</span> response{pendingToPost.length !== 1 ? 's' : ''} selected
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200">{pendingToPost.length}</span> response{pendingToPost.length !== 1 ? 's' : ''} selected
           </p>
         )}
         <button
           onClick={() => postMutation.mutate(pendingToPost)}
           disabled={pendingToPost.length === 0 || postMutation.isPending}
-          className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition-colors flex items-center gap-2"
+          className="px-5 py-2.5 bg-brand-200 hover:bg-brand-300 text-brand-900 disabled:opacity-50 disabled:cursor-not-allowed rounded font-semibold text-sm transition-colors flex items-center gap-2"
         >
           {postMutation.isPending && <Spinner size={14} />}
           {pendingToPost.length === 0 ? 'Nothing to post' : `Post ${pendingToPost.length} response${pendingToPost.length !== 1 ? 's' : ''} →`}

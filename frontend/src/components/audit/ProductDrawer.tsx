@@ -10,7 +10,6 @@ interface Props {
   onClose: () => void
 }
 
-// Inline progress bar for score breakdown (value out of max)
 function ScoreBar({
   label,
   value,
@@ -29,12 +28,12 @@ function ScoreBar({
   return (
     <div>
       <div className="flex justify-between items-center mb-1.5">
-        <span className="text-sm text-slate-600">{label}</span>
+        <span className="text-sm text-zinc-600 dark:text-zinc-400">{label}</span>
         <span className={cn('text-sm font-semibold tabular-nums', textColor)}>
           {value}/{max}
         </span>
       </div>
-      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
         <div
           className={cn('h-full rounded-full transition-all duration-700', color)}
           style={{ width: `${pct}%` }}
@@ -44,7 +43,6 @@ function ScoreBar({
   )
 }
 
-// Group issues by severity for display
 function groupBySeverity(issues: Array<{ severity: string; message: string; fix_hint?: string; rule?: string }>) {
   const order = ['critical', 'warning', 'info'] as const
   return order
@@ -59,7 +57,6 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
   const { data: product, isLoading } = useProductDetail(auditId, productId)
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: authApi.me })
 
-  // Derive store name: "amba-storees.myshopify.com" → "amba-storees"
   const storeName = me?.shop_domain?.replace('.myshopify.com', '') ?? ''
   const shopifyProductUrl =
     storeName && product?.shopify_product_id
@@ -82,31 +79,31 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
       {/* Drawer */}
       <div
         className={cn(
-          'fixed top-0 right-0 h-full w-full max-w-xl bg-white shadow-2xl z-40',
+          'fixed top-0 right-0 h-full w-full max-w-xl bg-white dark:bg-zinc-900 shadow-2xl z-40',
           'flex flex-col transition-transform duration-300 ease-out',
           isOpen ? 'translate-x-0' : 'translate-x-full'
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-slate-100">
+        <div className="flex items-start justify-between px-6 py-5 border-b border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
             {product?.image_url && (
               <img
                 src={product.image_url}
                 alt={product.title}
-                className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-slate-100"
+                className="w-12 h-12 rounded object-cover flex-shrink-0 border border-zinc-100 dark:border-zinc-700"
               />
             )}
             <div className="min-w-0">
-              <h2 className="font-semibold text-slate-800 text-base truncate">
+              <h2 className="font-semibold text-zinc-800 dark:text-zinc-100 text-base truncate">
                 {product?.title ?? 'Loading…'}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5 font-mono">{product?.handle}</p>
+              <p className="text-xs text-zinc-400 mt-0.5 font-mono">{product?.handle}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 transition-colors text-xl leading-none flex-shrink-0"
+            className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors text-xl leading-none flex-shrink-0"
           >
             ✕
           </button>
@@ -126,10 +123,10 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
               <div className="flex items-center gap-6">
                 <ScoreRing score={product.score} size={96} strokeWidth={7} />
                 <div className="space-y-1.5">
-                  <p className="text-sm font-semibold text-slate-700">{scoreLabel(product.score)}</p>
-                  <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                    <span className="bg-slate-100 rounded px-2 py-0.5">{product.image_count} images</span>
-                    <span className="bg-slate-100 rounded px-2 py-0.5">{product.word_count} words</span>
+                  <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{scoreLabel(product.score)}</p>
+                  <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
+                    <span className="bg-zinc-100 dark:bg-zinc-800 rounded px-2 py-0.5">{product.image_count} images</span>
+                    <span className="bg-zinc-100 dark:bg-zinc-800 rounded px-2 py-0.5">{product.word_count} words</span>
                     <span
                       className={cn(
                         'rounded px-2 py-0.5',
@@ -152,7 +149,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                     </span>
                   </div>
                   {product.ai_verdict && (
-                    <p className="text-xs text-slate-500 italic mt-1 max-w-xs">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 italic mt-1 max-w-xs">
                       "{product.ai_verdict}"
                     </p>
                   )}
@@ -163,8 +160,8 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
               {(product.content_score !== undefined ||
                 product.visual_score !== undefined ||
                 product.title_score !== undefined) && (
-                <div className="bg-slate-50 rounded-xl p-4 space-y-3">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded p-4 space-y-3">
+                  <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">
                     Score breakdown
                   </h3>
                   {product.content_score !== undefined && (
@@ -182,7 +179,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
               {/* Issues grouped by severity */}
               {(product.issues?.length ?? 0) > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
                     Issues found ({product.issues?.length ?? 0})
                   </h3>
                   <div className="space-y-4">
@@ -190,14 +187,14 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                       <div key={severity}>
                         <div className="flex items-center gap-2 mb-2">
                           <SeverityBadge severity={severity} />
-                          <span className="text-xs text-slate-400">{items.length} issue{items.length !== 1 ? 's' : ''}</span>
+                          <span className="text-xs text-zinc-400">{items.length} issue{items.length !== 1 ? 's' : ''}</span>
                         </div>
                         <div className="space-y-2">
                           {items.map((issue, i) => (
                             <div
                               key={i}
                               className={cn(
-                                'rounded-lg p-3.5 border',
+                                'rounded p-3.5 border',
                                 severity === 'critical'
                                   ? 'bg-red-50 border-red-100'
                                   : severity === 'warning'
@@ -205,15 +202,15 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                                   : 'bg-blue-50 border-blue-100'
                               )}
                             >
-                              <p className="text-sm font-medium text-slate-800">{issue.message}</p>
+                              <p className="text-sm font-medium text-zinc-800">{issue.message}</p>
                               {issue.fix_hint && (
-                                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                                  <span className="font-medium text-slate-700">Fix: </span>
+                                <p className="text-xs text-zinc-600 mt-1.5 leading-relaxed">
+                                  <span className="font-medium text-zinc-700">Fix: </span>
                                   {issue.fix_hint}
                                 </p>
                               )}
                               {issue.rule && (
-                                <p className="text-[10px] text-slate-400 mt-1.5 font-mono">{issue.rule}</p>
+                                <p className="text-[10px] text-zinc-400 mt-1.5 font-mono">{issue.rule}</p>
                               )}
                             </div>
                           ))}
@@ -228,22 +225,22 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
               {(product.ai_improvements?.length ?? 0) > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                       AI recommendations
                     </h3>
                     <span className="text-[9px] bg-brand-50 text-brand-700 border border-brand-100 px-1.5 py-0.5 rounded font-medium">
                       Gemini
                     </span>
                     {product.ai_score !== null && (
-                      <span className="text-xs text-slate-400 ml-auto">
+                      <span className="text-xs text-zinc-400 ml-auto">
                         Content quality:{' '}
-                        <strong className="text-slate-600">{product.ai_score}/100</strong>
+                        <strong className="text-zinc-600 dark:text-zinc-300">{product.ai_score}/100</strong>
                       </span>
                     )}
                   </div>
                   <ul className="space-y-2">
                     {product.ai_improvements?.map((imp, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-zinc-700 dark:text-zinc-300">
                         <span className="mt-0.5 text-brand-500 text-xs font-bold flex-shrink-0">
                           {i + 1}.
                         </span>
@@ -258,7 +255,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
               {product.ai_rewrite && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
                       AI-rewritten description
                     </h3>
                     <span className="text-[9px] bg-brand-50 text-brand-700 border border-brand-100 px-1.5 py-0.5 rounded font-medium">
@@ -266,7 +263,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
                     </span>
                   </div>
                   <div
-                    className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none"
+                    className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded p-4 text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: product.ai_rewrite }}
                   />
                   <button
@@ -282,7 +279,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-100 px-6 py-4 flex gap-3">
+        <div className="border-t border-zinc-100 dark:border-zinc-800 px-6 py-4 flex gap-3">
           <a
             href={shopifyProductUrl}
             target="_blank"
@@ -293,7 +290,7 @@ export function ProductDrawer({ auditId, productId, onClose }: Props) {
           </a>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-sm text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
           >
             Close
           </button>

@@ -14,7 +14,7 @@ export function UpgradeModal({ reason, message, onClose }: UpgradeModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 z-10">
+      <div className="relative bg-white dark:bg-zinc-900 rounded-lg shadow-2xl max-w-sm w-full p-6 z-10 border border-zinc-200 dark:border-zinc-800">
         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center mx-auto mb-4">
           {isProductLimit ? (
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,13 +25,13 @@ export function UpgradeModal({ reason, message, onClose }: UpgradeModalProps) {
           )}
         </div>
 
-        <h2 className="text-lg font-semibold text-slate-900 text-center mb-2">
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 text-center mb-2 tracking-tight">
           {isProductLimit ? 'Product Limit Reached' : 'Upgrade to continue'}
         </h2>
-        <p className="text-sm text-slate-500 text-center mb-5">{message}</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center mb-5">{message}</p>
 
         {/* Pro plan highlight */}
-        <div className="bg-gradient-to-r from-brand-600 to-purple-600 text-white rounded-xl p-4 mb-5">
+        <div className="bg-brand-600 dark:bg-brand-200/10 border border-brand-300/50 text-white rounded p-4 mb-5">
           <p className="font-semibold text-sm mb-1">✨ Professional Plan</p>
           <p className="text-2xl font-bold mb-2">
             $29 <span className="text-sm font-normal opacity-80">/month</span>
@@ -53,7 +53,7 @@ export function UpgradeModal({ reason, message, onClose }: UpgradeModalProps) {
           </button>
           <button
             onClick={onClose}
-            className="text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors"
+            className="text-sm text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 py-2 transition-colors"
           >
             Maybe later
           </button>

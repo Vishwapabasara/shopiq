@@ -42,10 +42,10 @@ export function ReturnsPage() {
       )}
 
       {/* Top bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
+      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
         <div>
-          <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">ReturnRadar</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">ReturnRadar</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
             {isComplete && results?.completed_at
               ? `Last analysed ${formatDate(results.completed_at)} at ${formatTime(results.completed_at)}`
               : isRunning
@@ -89,7 +89,7 @@ export function ReturnsPage() {
               <button
                 onClick={cancelAnalysis}
                 disabled={isCancelling}
-                className="text-xs text-slate-400 hover:text-red-500 transition-colors underline underline-offset-2"
+                className="text-xs text-zinc-400 hover:text-red-500 transition-colors underline underline-offset-2"
               >
                 {isCancelling ? 'Cancelling…' : 'Cancel analysis'}
               </button>

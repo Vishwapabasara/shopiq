@@ -43,21 +43,21 @@ export function AuditProgress({ statusData }: Props) {
           <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
             <span className="text-red-500 text-xl">✕</span>
           </div>
-          <h3 className="font-semibold text-slate-800 mb-2">Audit failed</h3>
-          <p className="text-sm text-slate-500">{statusData?.error_message ?? 'An unexpected error occurred'}</p>
+          <h3 className="font-semibold text-zinc-800 mb-2">Audit failed</h3>
+          <p className="text-sm text-zinc-500">{statusData?.error_message ?? 'An unexpected error occurred'}</p>
         </>
       ) : (
         <>
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-slate-100 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full border-2 border-zinc-100 dark:border-zinc-800 flex items-center justify-center">
                 <Spinner size={28} />
               </div>
             </div>
           </div>
 
-          <h3 className="font-semibold text-slate-800 mb-1">Audit in progress</h3>
-          <p className="text-sm text-slate-500 mb-6">{current.label}…</p>
+          <h3 className="font-semibold text-zinc-800 mb-1">Audit in progress</h3>
+          <p className="text-sm text-zinc-500 mb-6">{current.label}…</p>
 
           <ProgressBar value={current.pct} max={100} />
 
@@ -67,10 +67,10 @@ export function AuditProgress({ statusData }: Props) {
                 <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs
                   ${i < stepIdx ? 'bg-emerald-100 text-emerald-600' :
                     i === stepIdx ? 'bg-brand-100 text-brand-600' :
-                    'bg-slate-100 text-slate-300'}`}>
+                    'bg-zinc-100 text-zinc-300'}`}>
                   {i < stepIdx ? '✓' : i + 1}
                 </div>
-                <span className={`text-sm ${i <= stepIdx ? 'text-slate-700' : 'text-slate-400'}`}>
+                <span className={`text-sm ${i <= stepIdx ? 'text-zinc-700' : 'text-zinc-400'}`}>
                   {step.label}
                 </span>
                 {i === stepIdx && <Spinner size={12} className="ml-auto" />}

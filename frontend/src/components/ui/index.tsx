@@ -23,7 +23,8 @@ export function ScoreRing({
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2} cy={size / 2} r={r}
-          fill="none" stroke="#e2e8f0" strokeWidth={strokeWidth}
+          fill="none" stroke="currentColor" strokeWidth={strokeWidth}
+          className="text-zinc-200 dark:text-zinc-700"
         />
         <circle
           cx={size / 2} cy={size / 2} r={r}
@@ -38,10 +39,10 @@ export function ScoreRing({
         <span className={cn('text-3xl font-semibold tabular-nums', scoreColor(score))}>
           {score}
         </span>
-        <span className="text-xs text-slate-400 font-medium">/100</span>
+        <span className="text-xs text-zinc-400 font-medium">/100</span>
       </div>
-      {label && <p className="text-sm font-medium text-slate-700">{label}</p>}
-      {sublabel && <p className="text-xs text-slate-400">{sublabel}</p>}
+      {label && <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</p>}
+      {sublabel && <p className="text-xs text-zinc-400">{sublabel}</p>}
     </div>
   )
 }
@@ -60,15 +61,15 @@ const accentMap = {
   amber: 'text-amber-500',
   green: 'text-emerald-600',
   blue: 'text-blue-600',
-  default: 'text-slate-900',
+  default: 'text-zinc-900 dark:text-zinc-100',
 }
 
 export function StatCard({ label, value, sub, accent = 'default' }: StatCardProps) {
   return (
     <div className="card p-4">
-      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">{label}</p>
+      <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wide mb-1">{label}</p>
       <p className={cn('text-3xl font-semibold tabular-nums', accentMap[accent])}>{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-zinc-400 mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -87,12 +88,12 @@ export function CategoryBar({ label, score, weight }: CategoryBarProps) {
     <div>
       <div className="flex justify-between items-center mb-1.5">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-700">{label}</span>
-          <span className="text-xs text-slate-400">{weight}</span>
+          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
+          <span className="text-xs text-zinc-400">{weight}</span>
         </div>
         <span className={cn('text-sm font-semibold tabular-nums', scoreColor(score))}>{score}</span>
       </div>
-      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
         <div
           className={cn('h-full rounded-full transition-all duration-700', color)}
           style={{ width: `${score}%` }}
@@ -140,8 +141,8 @@ export function EmptyState({ icon = '🔍', title, description, action }: EmptyS
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="text-4xl mb-4">{icon}</div>
-      <h3 className="text-base font-semibold text-slate-700 mb-2">{title}</h3>
-      <p className="text-sm text-slate-500 max-w-sm mb-6">{description}</p>
+      <h3 className="text-base font-semibold text-zinc-700 dark:text-zinc-300 mb-2">{title}</h3>
+      <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-6">{description}</p>
       {action}
     </div>
   )
@@ -154,12 +155,12 @@ export function ProgressBar({ value, max, label }: { value: number; max: number;
   return (
     <div className="w-full">
       {label && (
-        <div className="flex justify-between text-xs text-slate-500 mb-1">
+        <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-1">
           <span>{label}</span>
           <span>{pct}%</span>
         </div>
       )}
-      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
         <div
           className="h-full bg-brand-600 rounded-full transition-all duration-300"
           style={{ width: `${pct}%` }}

@@ -82,7 +82,7 @@ export function PlansPage() {
 
   if (usageLoading || plansLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-[#09090b]">
         <Spinner size={28} />
       </div>
     )
@@ -92,18 +92,18 @@ export function PlansPage() {
   const orderedPlans = planOrder.filter(k => plans[k]).map(k => ({ key: k, plan: plans[k] }))
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4">
+    <div className="min-h-screen bg-zinc-50 dark:bg-[#09090b] py-12 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <button
             onClick={toDashboard}
-            className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 mb-6 inline-flex items-center gap-1 transition-colors"
+            className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 mb-6 inline-flex items-center gap-1 transition-colors"
           >
             ← Back to dashboard
           </button>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-3">Choose Your Plan</h1>
-          <p className="text-slate-500 dark:text-slate-400">Unlock the full power of ShopIQ</p>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 mb-3">Choose Your Plan</h1>
+          <p className="text-zinc-500 dark:text-zinc-400">Unlock the full power of ShopIQ</p>
         </div>
 
         {error && (
@@ -122,12 +122,12 @@ export function PlansPage() {
               <div
                 key={key}
                 className={cn(
-                  'bg-white dark:bg-slate-800 rounded-2xl shadow-sm border p-8 relative flex flex-col',
+                  'bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border p-8 relative flex flex-col',
                   key === 'pro'
                     ? 'border-brand-500 ring-2 ring-brand-500 shadow-md'
                     : key === 'enterprise'
                     ? 'border-purple-300 dark:border-purple-700'
-                    : 'border-slate-200 dark:border-slate-700'
+                    : 'border-zinc-200 dark:border-zinc-700'
                 )}
               >
                 {key === 'pro' && (
@@ -139,11 +139,11 @@ export function PlansPage() {
                 )}
 
                 <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">{plan.name}</h2>
+                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-1">{plan.name}</h2>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-slate-900 dark:text-slate-100">${plan.price}</span>
+                    <span className="text-4xl font-bold text-zinc-900 dark:text-zinc-100">${plan.price}</span>
                     {plan.price > 0 && (
-                      <span className="text-slate-400 dark:text-slate-500 text-sm">/month</span>
+                      <span className="text-zinc-400 dark:text-zinc-500 text-sm">/month</span>
                     )}
                   </div>
                   {plan.trial_days && plan.price > 0 && (
@@ -155,7 +155,7 @@ export function PlansPage() {
 
                 <ul className="space-y-2.5 mb-8 flex-1">
                   {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                       <span className="text-emerald-500 mt-0.5 flex-shrink-0">✓</span>
                       {feature}
                     </li>
@@ -168,15 +168,15 @@ export function PlansPage() {
                   className={cn(
                     'w-full py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2',
                     isCurrent
-                      ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                      ? 'bg-zinc-100 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 cursor-not-allowed'
                       : key === 'pro'
                       ? 'bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-60'
                       : key === 'enterprise'
-                      ? 'bg-slate-900 dark:bg-purple-700 text-white hover:bg-slate-800 dark:hover:bg-purple-600 disabled:opacity-60'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-60'
+                      ? 'bg-zinc-900 dark:bg-purple-700 text-white hover:bg-zinc-800 dark:hover:bg-purple-600 disabled:opacity-60'
+                      : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 disabled:opacity-60'
                   )}
                 >
-                  {isLoading && <Spinner size={14} className={key === 'free' ? 'text-slate-600' : 'text-white'} />}
+                  {isLoading && <Spinner size={14} className={key === 'free' ? 'text-zinc-600' : 'text-white'} />}
                   {isCurrent
                     ? 'Current plan'
                     : isLoading
@@ -190,7 +190,7 @@ export function PlansPage() {
           })}
         </div>
 
-        <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-8">
+        <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 mt-8">
           Billing is processed securely through Shopify. Cancel anytime.
         </p>
       </div>

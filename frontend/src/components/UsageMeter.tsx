@@ -29,7 +29,7 @@ interface UsageData {
 function ProgressBar({ used, limit }: { used: number; limit: number }) {
   if (limit === -1 || limit === 0) {
     return (
-      <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+      <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5">
         <div className="h-1.5 rounded-full bg-emerald-400 w-full" />
       </div>
     )
@@ -37,7 +37,7 @@ function ProgressBar({ used, limit }: { used: number; limit: number }) {
   const pct = Math.min((used / limit) * 100, 100)
   const color = pct >= 90 ? 'bg-red-400' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-400'
   return (
-    <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+    <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5">
       <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
     </div>
   )
@@ -47,7 +47,7 @@ function UsageRow({ label, used, limit }: { label: string; used: number; limit: 
   const display = limit === -1 ? '∞' : String(limit)
   return (
     <div>
-      <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+      <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-1">
         <span>{label}</span>
         <span>{used} / {display}</span>
       </div>
@@ -78,15 +78,15 @@ export function UsageMeter() {
   const showUpgrade = isFreePlan && (auditsNearLimit || copyNearLimit)
 
   return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-4">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-5 py-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
           Usage this month
         </span>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded capitalize
           ${plan === 'enterprise' ? 'bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400'
           : plan === 'pro' ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400'
-          : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'}`}>
           {plan === 'starter' ? 'Free' : plan} plan
         </span>
       </div>
@@ -115,16 +115,16 @@ export function UsageMeter() {
 
       {/* Free tier: batch scan info */}
       {isFreePlan && isScanBatched && (
-        <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-          <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-0.5">
+        <div className="mt-3 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded">
+          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300 mb-0.5">
             Rotating scan — {limits.audit_batch_size} products per audit
           </p>
           {scan_state.total_products > 0 ? (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               {scan_state.total_products} total products &middot; batches rotate so every product is covered
             </p>
           ) : (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Run your first audit to begin scanning
             </p>
           )}
@@ -136,7 +136,7 @@ export function UsageMeter() {
 
       {/* Upgrade CTA when approaching limits */}
       {showUpgrade && (
-        <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
           <p className="text-xs text-yellow-800 dark:text-yellow-300 font-medium mb-1">
             Running low on free plan limits
           </p>
@@ -145,7 +145,7 @@ export function UsageMeter() {
           </p>
           <Link
             to="/plans"
-            className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+            className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition"
           >
             View Plans
           </Link>

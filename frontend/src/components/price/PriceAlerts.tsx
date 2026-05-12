@@ -37,8 +37,8 @@ export function PriceAlerts({ products, currency }: Props) {
     <div className="card px-5 py-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-sm font-semibold text-slate-800">Price Alerts</p>
-          <p className="text-xs text-slate-400 mt-0.5">Products losing competitiveness — sorted by gap size</p>
+          <p className="text-sm font-semibold text-zinc-800">Price Alerts</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Products losing competitiveness — sorted by gap size</p>
         </div>
         <span className="text-xs font-medium bg-red-50 text-red-700 border border-red-100 px-2 py-1 rounded-full">
           {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
@@ -56,17 +56,17 @@ export function PriceAlerts({ products, currency }: Props) {
                 {/* Product info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <p className="text-sm font-medium text-slate-800 truncate">{p.title}</p>
+                    <p className="text-sm font-medium text-zinc-800 truncate">{p.title}</p>
                     <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${cfg.badge}`}>
                       {cfg.label}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
-                    <span>Our price: <strong className="text-slate-700">{fmt(p.our_price)}</strong></span>
+                  <div className="flex items-center gap-3 text-xs text-zinc-500 flex-wrap">
+                    <span>Our price: <strong className="text-zinc-700">{fmt(p.our_price)}</strong></span>
                     {p.min_competitor_price && (
                       <span>
-                        Cheapest: <strong className="text-slate-700">{fmt(p.min_competitor_price)}</strong>
-                        {cheapestComp && <span className="text-slate-400"> ({cheapestComp.competitor})</span>}
+                        Cheapest: <strong className="text-zinc-700">{fmt(p.min_competitor_price)}</strong>
+                        {cheapestComp && <span className="text-zinc-400"> ({cheapestComp.competitor})</span>}
                       </span>
                     )}
                     {p.price_gap_pct !== null && (
@@ -78,7 +78,7 @@ export function PriceAlerts({ products, currency }: Props) {
                   {/* Competitor list */}
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {p.competitor_prices.slice(0, 4).map((c, i) => (
-                      <span key={i} className="text-[10px] bg-white border border-slate-200 rounded px-1.5 py-0.5 text-slate-600">
+                      <span key={i} className="text-[10px] bg-white border border-zinc-200 rounded px-1.5 py-0.5 text-zinc-600">
                         {c.competitor}: <strong>{fmt(c.price)}</strong>
                       </span>
                     ))}
@@ -88,9 +88,9 @@ export function PriceAlerts({ products, currency }: Props) {
                 {/* Suggestion */}
                 {p.suggested_price && (
                   <div className="flex-shrink-0 text-right">
-                    <p className="text-[10px] text-slate-400 mb-0.5">Suggested</p>
+                    <p className="text-[10px] text-zinc-400 mb-0.5">Suggested</p>
                     <p className="text-base font-bold text-emerald-600 tabular-nums">{fmt(p.suggested_price)}</p>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-zinc-400">
                       save {fmt(p.our_price - p.suggested_price)}
                     </p>
                   </div>

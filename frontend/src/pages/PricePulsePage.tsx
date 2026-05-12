@@ -35,10 +35,10 @@ export function PricePulsePage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       {/* Top bar */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
+      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 md:px-8 py-4 flex items-center justify-between lg:sticky top-0 z-10">
         <div>
-          <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100">PricePulse</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <h1 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">PricePulse</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">
             {isComplete && results?.completed_at
               ? `Last checked ${formatDate(results.completed_at)} at ${formatTime(results.completed_at)}`
               : isRunning
@@ -86,15 +86,15 @@ export function PricePulsePage() {
             <div className="card px-6 py-8 flex flex-col items-center gap-4">
               <Spinner size={32} />
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-700">Scanning competitor prices…</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Scanning competitor prices…</p>
+                <p className="text-xs text-zinc-400 mt-1">
                   {statusData?.products_analyzed != null && statusData?.total_products
                     ? `Checked ${statusData.products_analyzed} of ${statusData.total_products} products via Google Shopping`
                     : 'Fetching your product catalogue and querying market prices'
                   }
                 </p>
                 {progressPct !== null && (
-                  <div className="mt-3 w-48 h-1.5 bg-slate-100 rounded-full overflow-hidden mx-auto">
+                  <div className="mt-3 w-48 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mx-auto">
                     <div
                       className="h-full bg-brand-600 rounded-full transition-all duration-300"
                       style={{ width: `${progressPct}%` }}
@@ -107,7 +107,7 @@ export function PricePulsePage() {
               <button
                 onClick={cancelAnalysis}
                 disabled={isCancelling}
-                className="text-xs text-slate-400 hover:text-red-500 transition-colors underline underline-offset-2"
+                className="text-xs text-zinc-400 hover:text-red-500 transition-colors underline underline-offset-2"
               >
                 {isCancelling ? 'Cancelling…' : 'Cancel'}
               </button>
@@ -152,7 +152,7 @@ export function PricePulsePage() {
                   </button>
                 </div>
                 {!serpConfigured && (
-                  <p className="text-xs text-slate-400 max-w-sm text-center">
+                  <p className="text-xs text-zinc-400 max-w-sm text-center">
                     Live scanning requires a <strong>SERPAPI_KEY</strong> environment variable on Railway.
                     Use "Load demo data" to preview the feature without it.
                   </p>

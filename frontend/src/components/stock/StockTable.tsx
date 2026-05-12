@@ -17,13 +17,13 @@ const STATUS_CONFIG = {
 const ABC_CONFIG = {
   A: 'bg-violet-100 text-violet-700',
   B: 'bg-sky-100 text-sky-700',
-  C: 'bg-slate-100 text-slate-500',
+  C: 'bg-zinc-100 text-zinc-500',
 }
 
 const TREND_ICON = {
   rising:  { icon: '↑', cls: 'text-emerald-600' },
   falling: { icon: '↓', cls: 'text-red-500' },
-  stable:  { icon: '→', cls: 'text-slate-400' },
+  stable:  { icon: '→', cls: 'text-zinc-400' },
 }
 
 function fmt(n: number, currency: string) {
@@ -69,7 +69,7 @@ export function StockTable({ products, currency, filterStatus }: Props) {
     return (
       <button
         onClick={() => toggleSort(k)}
-        className="flex items-center gap-0.5 hover:text-slate-800 transition-colors"
+        className="flex items-center gap-0.5 hover:text-zinc-800 transition-colors"
       >
         {children}
         {sortKey === k && <span className="text-brand-600">{sortAsc ? '↑' : '↓'}</span>}
@@ -79,8 +79,8 @@ export function StockTable({ products, currency, filterStatus }: Props) {
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-800">
+      <div className="px-5 py-3 border-b border-zinc-100 flex items-center justify-between">
+        <p className="text-sm font-semibold text-zinc-800">
           {filterStatus
             ? `${STATUS_CONFIG[filterStatus as keyof typeof STATUS_CONFIG]?.label ?? filterStatus} — ${filtered.length} SKU${filtered.length !== 1 ? 's' : ''}`
             : `All SKUs — ${products.length}`
@@ -91,7 +91,7 @@ export function StockTable({ products, currency, filterStatus }: Props) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100 text-xs text-slate-400 font-medium uppercase tracking-wide">
+            <tr className="border-b border-zinc-100 text-xs text-zinc-400 font-medium uppercase tracking-wide">
               <th className="text-left px-5 py-2.5 w-full max-w-xs">Product</th>
               <th className="text-right px-3 py-2.5 whitespace-nowrap">
                 <SortBtn k="inventory_qty">Stock</SortBtn>
@@ -109,47 +109,47 @@ export function StockTable({ products, currency, filterStatus }: Props) {
               <th className="text-center px-3 py-2.5">ABC</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-zinc-50">
             {visible.map(p => {
               const s = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.healthy
               const trend = TREND_ICON[p.velocity_trend]
               const daysColor =
-                p.days_to_stockout === null ? 'text-slate-300' :
+                p.days_to_stockout === null ? 'text-zinc-300' :
                 p.days_to_stockout <= 7 ? 'text-red-600 font-semibold' :
                 p.days_to_stockout <= 14 ? 'text-amber-500 font-medium' :
-                p.days_to_stockout <= 30 ? 'text-blue-600' : 'text-slate-500'
+                p.days_to_stockout <= 30 ? 'text-blue-600' : 'text-zinc-500'
 
               return (
-                <tr key={p.variant_id} className="hover:bg-slate-50 transition-colors">
+                <tr key={p.variant_id} className="hover:bg-zinc-50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                      <div className="w-8 h-8 rounded-lg bg-zinc-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
                         {p.image_url
                           ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
-                          : <span className="text-slate-400 text-xs">⬡</span>
+                          : <span className="text-zinc-400 text-xs">⬡</span>
                         }
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate max-w-[200px]">{p.title}</p>
-                        <p className="text-xs text-slate-400">{p.sku || '—'}</p>
+                        <p className="text-sm font-medium text-zinc-800 truncate max-w-[200px]">{p.title}</p>
+                        <p className="text-xs text-zinc-400">{p.sku || '—'}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums">
-                    <span className="text-slate-700 font-medium">{p.inventory_qty}</span>
+                    <span className="text-zinc-700 font-medium">{p.inventory_qty}</span>
                   </td>
                   <td className={`px-3 py-3 text-right tabular-nums ${daysColor}`}>
                     {p.days_to_stockout !== null ? `${p.days_to_stockout}d` : '—'}
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums">
-                    <span className="text-slate-700">{p.daily_velocity.toFixed(1)}</span>
+                    <span className="text-zinc-700">{p.daily_velocity.toFixed(1)}</span>
                     <span className={`ml-1 text-xs font-bold ${trend.cls}`}>{trend.icon}</span>
-                    <span className="block text-[10px] text-slate-400">units/day</span>
+                    <span className="block text-[10px] text-zinc-400">units/day</span>
                   </td>
                   <td className="px-3 py-3 text-right tabular-nums">
                     {p.revenue_at_risk > 0
                       ? <span className="text-red-600 font-medium">{fmt(p.revenue_at_risk, currency)}</span>
-                      : <span className="text-slate-300">—</span>
+                      : <span className="text-zinc-300">—</span>
                     }
                   </td>
                   <td className="px-3 py-3 text-center">
@@ -170,22 +170,22 @@ export function StockTable({ products, currency, filterStatus }: Props) {
       </div>
 
       {pages > 1 && (
-        <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
-          <span className="text-xs text-slate-400">
+        <div className="px-5 py-3 border-t border-zinc-100 flex items-center justify-between">
+          <span className="text-xs text-zinc-400">
             {page * PAGE + 1}–{Math.min((page + 1) * PAGE, sorted.length)} of {sorted.length}
           </span>
           <div className="flex gap-1">
             <button
               onClick={() => setPage(p => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-2.5 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+              className="px-2.5 py-1 text-xs rounded border border-zinc-200 disabled:opacity-40 hover:bg-zinc-50"
             >
               ←
             </button>
             <button
               onClick={() => setPage(p => Math.min(pages - 1, p + 1))}
               disabled={page >= pages - 1}
-              className="px-2.5 py-1 text-xs rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+              className="px-2.5 py-1 text-xs rounded border border-zinc-200 disabled:opacity-40 hover:bg-zinc-50"
             >
               →
             </button>

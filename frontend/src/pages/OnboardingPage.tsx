@@ -161,8 +161,8 @@ export function OnboardingPage() {
       <div className="min-h-screen bg-white flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center">
           <img src={logo} alt="ShopIQ" className="w-14 h-14 object-contain mx-auto mb-8" />
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Scanning your store</h1>
-          <p className="text-slate-500 text-sm mb-10">
+          <h1 className="text-2xl font-bold text-zinc-900 mb-2">Scanning your store</h1>
+          <p className="text-zinc-500 text-sm mb-10">
             We're analysing your inventory to find exactly how much cash is tied up in slow-moving products.
           </p>
 
@@ -199,10 +199,10 @@ export function OnboardingPage() {
               return (
                 <div key={step} className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold
-                    ${done ? 'bg-emerald-500 text-white' : active ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-300'}`}>
+                    ${done ? 'bg-emerald-500 text-white' : active ? 'bg-brand-600 text-white' : 'bg-zinc-100 text-zinc-300'}`}>
                     {done ? '✓' : i + 1}
                   </div>
-                  <span className={`text-xs ${done ? 'text-emerald-600' : active ? 'text-slate-800 font-medium' : 'text-slate-300'}`}>
+                  <span className={`text-xs ${done ? 'text-emerald-600' : active ? 'text-zinc-800 font-medium' : 'text-zinc-300'}`}>
                     {step}
                   </span>
                   {active && (
@@ -231,8 +231,8 @@ export function OnboardingPage() {
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
           </div>
-          <h2 className="text-lg font-bold text-slate-900 mb-2">Scan failed</h2>
-          <p className="text-sm text-slate-500 mb-6">{errorMsg}</p>
+          <h2 className="text-lg font-bold text-zinc-900 mb-2">Scan failed</h2>
+          <p className="text-sm text-zinc-500 mb-6">{errorMsg}</p>
           <div className="flex gap-3 justify-center">
             <button
               onClick={() => { setPhase('checking'); startScan() }}
@@ -242,7 +242,7 @@ export function OnboardingPage() {
             </button>
             <button
               onClick={goToDashboard}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
+              className="bg-zinc-100 hover:bg-zinc-100 text-zinc-700 text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
             >
               Skip to dashboard
             </button>
@@ -258,13 +258,13 @@ export function OnboardingPage() {
     : 0
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
       <div className="w-full max-w-lg">
 
         {/* Header */}
         <div className="text-center mb-8">
           <img src={logo} alt="ShopIQ" className="w-10 h-10 object-contain mx-auto mb-4 opacity-80" />
-          <p className="text-slate-400 text-sm font-medium uppercase tracking-widest mb-2">Your store scan is complete</p>
+          <p className="text-zinc-400 text-sm font-medium uppercase tracking-widest mb-2">Your store scan is complete</p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
             Here's what we found
           </h1>
@@ -272,12 +272,12 @@ export function OnboardingPage() {
 
         {/* Dead stock hero number */}
         <div className="bg-white rounded-3xl p-8 mb-4 text-center shadow-2xl">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Cash tied up in dead stock</p>
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">Cash tied up in dead stock</p>
           <p className="text-5xl sm:text-6xl font-bold text-brand-600 mb-2">
             {result ? fmt(result.dead_stock_value, result.currency) : '—'}
           </p>
-          <p className="text-sm text-slate-500">
-            Across <span className="font-semibold text-slate-700">{result?.skus_dead_stock ?? 0} SKUs</span> that haven't moved in 90+ days
+          <p className="text-sm text-zinc-500">
+            Across <span className="font-semibold text-zinc-700">{result?.skus_dead_stock ?? 0} SKUs</span> that haven't moved in 90+ days
             {deadPct > 0 && (
               <> — <span className="font-semibold text-red-500">{deadPct}%</span> of your total inventory value</>
             )}
@@ -286,11 +286,11 @@ export function OnboardingPage() {
 
         {/* Secondary stats */}
         <div className="grid grid-cols-2 gap-3 mb-8">
-          <div className="bg-slate-800 rounded-2xl p-5 text-center">
+          <div className="bg-zinc-800 rounded-2xl p-5 text-center">
             <p className="text-2xl font-bold text-white mb-1">
               {result ? fmt(result.total_inventory_value, result.currency) : '—'}
             </p>
-            <p className="text-xs text-slate-400">Total inventory value</p>
+            <p className="text-xs text-zinc-400">Total inventory value</p>
           </div>
           <div className="bg-amber-500/20 border border-amber-500/30 rounded-2xl p-5 text-center">
             <p className="text-2xl font-bold text-amber-400 mb-1">{result?.skus_urgent ?? 0}</p>
@@ -300,7 +300,7 @@ export function OnboardingPage() {
 
         {/* Share card */}
         <div className="mb-6">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">
             Share your results
           </p>
           {result && (
@@ -316,8 +316,8 @@ export function OnboardingPage() {
         </div>
 
         {/* What else is ready */}
-        <div className="bg-slate-800/60 rounded-2xl p-5 mb-6">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Also ready in your dashboard</p>
+        <div className="bg-zinc-800/60 rounded-2xl p-5 mb-6">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">Also ready in your dashboard</p>
           <div className="space-y-2">
             {[
               { label: 'Product SEO & content audit', icon: '📋' },
@@ -327,7 +327,7 @@ export function OnboardingPage() {
             ].map(item => (
               <div key={item.label} className="flex items-center gap-3">
                 <span className="text-base">{item.icon}</span>
-                <span className="text-sm text-slate-300">{item.label}</span>
+                <span className="text-sm text-zinc-300">{item.label}</span>
                 <span className="ml-auto text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Ready</span>
               </div>
             ))}
@@ -344,7 +344,7 @@ export function OnboardingPage() {
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
           </svg>
         </button>
-        <p className="text-center text-xs text-slate-500 mt-3">
+        <p className="text-center text-xs text-zinc-500 mt-3">
           Your full dashboard is ready — inventory, returns, SEO, pricing, and AI tools
         </p>
       </div>
