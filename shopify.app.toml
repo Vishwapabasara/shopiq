@@ -1,6 +1,6 @@
 name = "ShopIQ"
 client_id = "7eb3bb3f96ff67af0a8a52125136b745"
-application_url = "https://shopiq-iota.vercel.app"
+application_url = "https://shopiq-production.up.railway.app"
 embedded = true
 
 [access_scopes]
@@ -17,7 +17,7 @@ api_version = "2026-04"
 
   [[webhooks.subscriptions]]
   compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
-  uri = "/webhooks/compliance"
+  uri = "https://shopiq-production.up.railway.app/webhooks/compliance"
 
 [pos]
 embedded = false

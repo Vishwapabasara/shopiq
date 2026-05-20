@@ -48,7 +48,7 @@ def verify_webhook(data: bytes, hmac_header: str) -> bool:
     return hmac.compare_digest(calculated, hmac_header)
 
 
-@router.post("")
+@router.post("/compliance")
 async def compliance_dispatcher(
     request: Request,
     x_shopify_hmac_sha256: str = Header(None),
@@ -57,6 +57,8 @@ async def compliance_dispatcher(
     """
     Single compliance endpoint declared in shopify.app.toml.
     Shopify sends all 3 GDPR topics here; dispatched via X-Shopify-Topic header.
+    URI must be the full backend URL in toml — Shopify resolves relative URIs
+    against application_url which is the frontend, not the backend.
     """
     body = await request.body()
 
